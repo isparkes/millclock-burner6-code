@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+        <script src="http://code.jquery.com/jquery-1.12.3.min.js" integrity="sha256-aaODHAgvwQW1bFOGXMeX+pC4PZIPsvn2h1sArYOhgXQ=" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+        <link href="css/clock-custom.css" rel="stylesheet">
+        <title>Nixie Clock</title>
+    </head>
+    <body>
+        <nav class="navbar navbar-inverse navbar-fixed-top">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="https://www.nixieclock.biz">Nixie Clock</a>
+                </div>
+                <div id="navbar" class="navbar-collapse collapse">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="/index.html">Summary</a>
+                        </li>
+                        <li>
+                            <a href="/clockconfig.html">Configure clock settings</a>
+                        </li>
+                        <li>
+                            <a href="/utility.html">Utility</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <div class="container after-fixed-navbar" role="main">
+            <h3 class="sub-header">Diagnostics</h3>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th class="col-xs-6">Name</th>
+                            <th class="col-xs-6">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Firmware compiled</td>
+                            <td id="compiledate"></td>
+                        </tr>
+                        <tr>
+                            <td>Firmware size</td>
+                            <td id="sketchsize"></td>
+                        </tr>
+                        <tr>
+                            <td>Flash size</td>
+                            <td id="flashsize"></td>
+                        </tr>
+                        <tr>
+                            <td>Firmware checksum</td>
+                            <td id="sketchmd5"></td>
+                        </tr>
+                        <tr>
+                            <td>Free heap</td>
+                            <td id="heap"></td>
+                        </tr>
+                        <tr>
+                            <td>CPU Freqency (MHz)</td>
+                            <td id="cpufreq"></td>
+                        </tr>
+                        <tr>
+                            <td>SDK version</td>
+                            <td id="sdkversion"></td>
+                        </tr>
+                        <tr>
+                            <td>Time since last boot</td>
+                            <td id="runtime"></td>
+                        </tr>
+                        <tr>
+                            <td>Total Clock Hours <span class="bi-save" id="uptimesave" title="Save the stats"></span></td>
+                            <td id="uptime"></td>
+                        </tr>
+                        <tr>
+                            <td>Total Tube hours</td>
+                            <td id="ontime"></td>
+                        </tr>
+                        <tr id="slaveupdaterow" hidden>
+                            <td>Slave updates total/failed</td>
+                            <td id="slaveupdates">0/0</td>
+                        </tr>
+                        <tr>
+                            <td>Last reset reason</td>
+                            <td id="resetreason"></td>
+                        </tr>
+                        <tr>
+                            <td>Features</td>
+                            <td id="features"></td>
+                        </tr>
+                        <tr>
+                            <td>Flash partioning</td>
+                            <td id="flashpartitions"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="container" role="main" id="digitDiagsContainer" hidden>
+            <h3 class="sub-header">Diagnostics Settings</h3>
+            <div class="form-horizontal">
+                <div class="form-group">
+                    <label class="control-label col-xs-3">Digit / LED Test mode:</label>
+                    <div class="col-xs-4">
+                        <select class="form-control" name="diagsMode" id="diagsMode">
+                            <option selected value="0">No diagnostics</option>
+                            <option value="1">Fast Diags</option>
+                            <option value="2">Slow Diags</option>
+                            <option value="3">Set via encoder</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-xs-offset-3 col-xs-9">
+                        <input type="submit" class="btn btn-primary" value="Use"  onclick="saveConfig()">
+                    </div>
+                </div>
+            </div>
+        </div>        
+    </body>
+
+<script>
+    decodePartitions = function(partitionList) {
+        var paritionListSplit = partitionList.replaceAll(';','<br/>');
+        return paritionListSplit;
+    }
+
+    getClockDiags = function getClockDiags() {
+        var deferred = $.Deferred();
+        console.log('get summary');
+        var ajaxOptions = {
+            url: '/api/getDiags',
+            type: 'GET',
+            Accept: 'application/json; charset=utf-8'
+        };
+        $.ajax(ajaxOptions).done(function (summary) {
+            console.log("Received data: " + JSON.stringify(summary));
+            deferred.resolve(summary);
+        }).fail(function (jqXHR) {
+            console.log("Get api error " + jqXHR.status);
+            deferred.reject(jqXHR.status);
+        });
+        return deferred;
+    };
+
+    saveStats = function saveStats() {
+        var deferred = $.Deferred();
+        console.log('save stats');
+        var ajaxOptions = {
+            url: '/utils/saveStats',
+            type: 'GET',
+            Accept: 'application/json; charset=utf-8'
+        };
+        $.ajax(ajaxOptions).done(function (summary) {
+            console.log("Received data: " + JSON.stringify(summary));
+            deferred.resolve(summary);
+        }).fail(function (jqXHR) {
+            console.log("Get api error " + jqXHR.status);
+            deferred.reject(jqXHR.status);
+        });
+        return deferred;
+    };
+
+    postDiagsSettings = function postDiagsSettings() {
+        var deferred = $.Deferred();
+        console.log('post diags settings');
+
+        var postBody = {
+        };
+
+        postBody["diagsMode"] = $("#diagsMode").val();
+
+        // ----------------------------------
+
+        var ajaxOptions = {
+            url: '/api/postDiags',
+            type: 'POST',
+            data: JSON.stringify(postBody)
+        };
+        $.ajax(ajaxOptions).done(function (res) {
+            console.log("Saved diags");
+            deferred.resolve(res);
+        }).fail(function (jqXHR) {
+            console.log("Post api error " + jqXHR.status);
+            deferred.reject(jqXHR.status);
+        });
+        return deferred;
+    };
+
+    saveConfig = function () {
+        addLoader();
+        postDiagsSettings()
+        .then(function (config) {
+            console.log("Saved diags");
+            removeLoader();
+        });
+    };
+
+    getDiags = function() {
+        addLoader();
+        getClockDiags().then(function(diags){
+            const usedMemPC = (diags.sketchsize/diags.freesketch * 100).toFixed(2);
+            const usedMsg = usedMemPC + '% (' + diags.sketchsize + '/' + diags.freesketch + ')';
+            const heapMsg = 'current: ' + diags.heap + ',  min: ' + diags.minfreeheap;
+            $("#runtime").text(diags.runtime);
+            $("#uptime").text(diags.uptime);
+            $("#ontime").text(diags.ontime);
+            $("#heap").text(heapMsg);
+            $("#sketchsize").text(usedMsg);
+            $("#flashsize").text(diags.flashsize);
+            $("#compiledate").text(diags.compiledate);
+            $("#cpufreq").text(diags.cpufreq);
+            $("#sdkversion").text(diags.sdkversion);
+            $("#sketchmd5").text(diags.sketchmd5);
+            $("#features").text(diags.features);
+            $("#resetreason").text(parseResetReasons(diags.resetreason));
+            $("#flashpartitions").html(decodePartitions(diags.partitions))
+
+            if (diags.slavetrycount > 0) {
+                $("#slaveupdaterow").prop('hidden', false);
+            }
+
+            if (diags.diagsMode != undefined) {
+                $("#digitDiagsContainer").prop('hidden', false);
+            }
+
+            if (diags.lastgpsraw !== '') {
+                $("#lastgpsraw").text(diags.lastgpsraw);
+            }
+        })
+        .then(() => removeLoader());
+    };
+
+    function decodeResetReason(reason) {
+        let reasonText;
+        switch(parseInt(reason)) {
+            case 1  : reasonText = "Vbat power on reset";break;
+            case 3  : reasonText = "Software reset digital core";break;
+            case 4  : reasonText = "Legacy watch dog reset digital core";break;
+            case 5  : reasonText = "Deep Sleep reset digital core";break;
+            case 6  : reasonText = "Reset by SLC module, reset digital core";break;
+            case 7  : reasonText = "Timer Group0 Watch dog reset digital core";break;
+            case 8  : reasonText = "Timer Group1 Watch dog reset digital core";break;
+            case 9  : reasonText = "RTC Watch dog Reset digital core";break;
+            case 10 : reasonText = "Instrusion tested to reset CPU";break;
+            case 11 : reasonText = "Time Group reset CPU";break;
+            case 12 : reasonText = "Software reset CPU";break;
+            case 13 : reasonText = "RTC Watch dog Reset CPU";break;
+            case 14 : reasonText = "for APP CPU, reset by PRO CPU";break;
+            case 15 : reasonText = "Reset when the vdd voltage is not stable";break;
+            case 16 : reasonText = "RTC Watch dog reset digital core and rtc module";break;
+            default : reasonText = "Unknown";
+        }
+        return reasonText;
+}    
+
+    function parseResetReasons(resetreason){
+        const resetReasonSplit = resetreason.split("/");
+        // problem, just pass it back
+        if (resetReasonSplit.length !== 2) return resetreason;
+        const resetReasonText0 = "Core0: " + decodeResetReason(resetReasonSplit[0]) + " (" + resetReasonSplit[0] + ")";
+        const resetReasonText1 = "Core1: " + decodeResetReason(resetReasonSplit[1]) + " (" + resetReasonSplit[1] + ")";
+        return resetReasonText0 + ", " + resetReasonText1;
+    };
+
+    function addLoader(){
+        $('body').append('<div style="" id="loadingDiv"><div class="loader">Loading...</div></div>');
+    };
+
+    function removeLoader(){
+        $( "#loadingDiv" ).fadeOut(500, function() {
+            $( "#loadingDiv" ).remove();
+        });
+    };
+
+    getDiags();
+
+    $("span#uptimesave").click(function(){
+        saveStats().then(function(res){
+            alert("Saved stats.");
+        })
+    });
+</script>
+</html>

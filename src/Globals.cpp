@@ -1,0 +1,59 @@
+#include "Globals.h"
+
+// ************************************************************
+// Global shared components and objects
+// ************************************************************
+esp_wps_config_t wps_config;
+
+// ************************************************************
+// Shared config objects
+// ************************************************************
+spiffs_config_t current_config;
+spiffs_stats_t current_stats;
+
+spiffs_config_t* cc = &current_config;
+spiffs_stats_t* cs = &current_stats;
+
+// ************************************************************
+// Display values
+// ************************************************************
+volatile uint32_t val1 = 0;
+volatile uint32_t val2 = 0;
+volatile uint32_t val3 = 0;
+
+volatile uint16_t impressions;
+
+// Makes sure we are not writing to the display buffer
+// when the interrupt is reading it
+portMUX_TYPE timerMux1 = portMUX_INITIALIZER_UNLOCKED;
+
+// Used for clean handling of the encoder 
+portMUX_TYPE encoderMux = portMUX_INITIALIZER_UNLOCKED;
+
+// ************************************************************
+// Variables for clock management
+// ************************************************************
+unsigned long nowMillis = 0;
+unsigned long previousMillisWiFi = 0;
+unsigned long lastSecondStartMillis = 0;
+int lastSecond = 0;
+boolean triggeredThisSec = false;
+int secsDeltaAbs;                   // Sawtooth 0..1000 every sec
+int secsDelta;                      // Triangle 0..1000..0 every 2 secs
+bool upOrDown;  
+
+bool doAutoReconnect = false;
+
+// Our network name
+String uniqHostname;
+
+// singleton object
+AsyncWebServer server(80);
+
+String lastWiFiScan = "";
+
+// ------------------ Global functions -----------------
+
+void updateNowMillis() {
+    nowMillis = millis();
+}

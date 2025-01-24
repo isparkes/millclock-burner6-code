@@ -1,0 +1,177 @@
+#include "OutputManager.h"
+
+// ************************************************************
+// Break the time into displayable digits
+// ************************************************************
+void OutputManager_::loadNumberArrayIntegerValue(unsigned int value) {
+  unsigned int valueBound = value;
+  if (valueBound > 999999)
+    valueBound = 999999;
+  
+  byte s1 = valueBound % 10;
+  valueBound = valueBound / 10;
+  byte s10 = valueBound % 10;
+  valueBound = valueBound / 10;
+  byte m1 = valueBound % 10;
+  valueBound = valueBound / 10;
+  byte m10 = valueBound % 10;
+  valueBound = valueBound / 10;
+  byte h1 = valueBound % 10;
+  valueBound = valueBound / 10;
+  byte h10 = valueBound % 10;
+
+  numberArray[S1]  = convertToDigit(s1  % 10);
+  numberArray[S10] = convertToDigit(s10 % 10);
+  numberArray[M1]  = convertToDigit(m1  % 10);
+  numberArray[M10] = convertToDigit(m10 % 10);
+  numberArray[H1]  = convertToDigit(h1  % 10);
+  numberArray[H10] = convertToDigit(h10 % 10);
+
+  // Update buffers
+  outputDisplay();
+}
+
+// ************************************************************
+// Break the time into displayable digits
+// ************************************************************
+void OutputManager_::loadNumberArraySameValue(byte value) {
+  byte val = value % 10;
+  numberArray[S1]  = convertToDigit(val);
+  numberArray[S10] = convertToDigit(val);
+  numberArray[M1]  = convertToDigit(val);
+  numberArray[M10] = convertToDigit(val);
+  numberArray[H1]  = convertToDigit(val);
+  numberArray[H10] = convertToDigit(val);
+
+  // Update buffers
+  outputDisplay();
+}
+
+// ************************************************************
+// Do a single complete display, including any fading and
+// dimming requested. Prepares the display variables for
+// the interrupt driven display output.
+// This is the heart of the display processing!
+// ************************************************************
+void OutputManager_::outputDisplay() {
+  uint32_t tmpnextVal1 = decodeFromNumberArray(
+                                #ifdef NORMAL_DIGIT_OUTPUT
+                                currNumberArray[H10], 
+                                currNumberArray[H1],
+                                digitBlanked[H10],
+                                digitBlanked[H1],
+                                #endif
+                                #ifdef REVERSE_DIGIT_OUTPUT
+                                numberArray[S1], 
+                                numberArray[S10],
+                                false,
+                                false,
+                                #endif
+                                false,
+                                false,
+                                false,
+                                false,
+                                false);
+  uint32_t tmpnextVal2 = decodeFromNumberArray(
+                                #ifdef NORMAL_DIGIT_OUTPUT
+                                currNumberArray[M10], 
+                                currNumberArray[M1],
+                                digitBlanked[M10],
+                                digitBlanked[M1],
+                                #endif
+                                #ifdef REVERSE_DIGIT_OUTPUT
+                                numberArray[M1], 
+                                numberArray[M10],
+                                false,
+                                false,
+                                #endif
+                                false,
+                                false,
+                                false,
+                                false,
+                                false);
+  uint32_t tmpnextVal3 = decodeFromNumberArray(
+                                #ifdef NORMAL_DIGIT_OUTPUT
+                                currNumberArray[S10], 
+                                currNumberArray[S1],
+                                digitBlanked[S10],
+                                digitBlanked[S1],
+                                #endif
+                                #ifdef REVERSE_DIGIT_OUTPUT
+                                numberArray[H1], 
+                                numberArray[H10],
+                                false,
+                                false,
+                                #endif
+                                false,
+                                false,
+                                false,
+                                !upOrDown,
+                                digitalRead(PPSPin));
+  uint32_t tmpval1 = tmpnextVal1;
+  uint32_t tmpval2 = tmpnextVal2;
+  uint32_t tmpval3 = tmpnextVal3;
+
+  // move the values over, respect the MUTEX on the interrupt, otherwise we get visible glitches
+  portENTER_CRITICAL_ISR(&timerMux1);
+  val1 = tmpval1;
+  val2 = tmpval2;
+  val3 = tmpval3;
+  portEXIT_CRITICAL_ISR(&timerMux1);
+}
+
+// ************************************************************
+// Turn a display pair into a uint24 ready for output
+// ************************************************************
+uint32_t OutputManager_::decodeFromNumberArray(byte valueToDecodeTens, byte valueToDecodeUnits, bool blankTens, bool blankUnits, bool blankSeparators, bool bl1, bool bl2, bool led1, bool led2) {
+  uint32_t decoded = 0;
+  return decoded;
+}
+
+// ************************************************************
+// Set the mode we are in
+// ************************************************************
+void OutputManager_::updateOncePerSecond() {
+#ifdef OTM_EXTENDED_DEBUG
+dumpNumberArrayValues();
+#endif
+
+}
+
+// ************************************************************
+// Safety function: Convert given value to a valid digit value
+// ************************************************************
+clock_digit OutputManager_::convertToDigit(int value) {
+  if (value < 0) {
+    debugMsgOtm("Underrange error converting digit");
+    debugMsgOtm("Got: " + String(value));
+    return digit0;
+  }
+  if (value > 9) {
+    debugMsgOtm("Overrange error converting digit");
+    debugMsgOtm("Got: " + String(value));
+    return digit9;
+  }
+  return (clock_digit) value;
+}
+
+#ifdef OTM_EXTENDED_DEBUG
+void OutputManager_::dumpNumberArrayValues() {
+  String val = "Number Array: " + 
+    String(numberArray[0]) + String(numberArray[1]) + ":" + 
+    String(numberArray[2]) + String(numberArray[3]) + ":" +
+    String(numberArray[4]) + String(numberArray[5]);
+  debugMsgOtm(val);
+
+}
+#endif
+
+// ************************************************************
+// Library internal singleton wiring
+// ************************************************************
+OutputManager_ &OutputManager_::getInstance() {
+  static OutputManager_ instance;
+  return instance;
+}
+
+OutputManager_ &outputManager = outputManager.getInstance();

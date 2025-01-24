@@ -29,6 +29,9 @@ const uint32_t DECODE_DIGIT[] = { 0x0200, 0x0001, 0x0002, 0x0004, 0x0008, 0x0010
 String timeToReadableStringFromTm(tm timeToFormat);
 uint32_t decodeBCD(byte valueToDecode, bool bl1, bool bl2, bool led1, bool led2);
 
+String getValueAtIndex(String data, char separator, int index);
+int getValueCount(String data, char separator);
+
 // Web handlers
 void getCredentialsHandler(AsyncWebServerRequest *request);
 void getWiFiNetworksHandler(AsyncWebServerRequest *request);

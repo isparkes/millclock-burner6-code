@@ -6,6 +6,7 @@
 #include "DebugManager.h"
 #include "WiFiManager.h"
 #include "OutputManager.h"
+#include "CounterManager.h"
 
 void setup() {
   // Show that we booted - useful for remote debugging
@@ -91,6 +92,7 @@ void setup() {
 
   // -------------------------------------------------------------------------
   // First start digit test
+  debugMsgMain("Startup digit test");
   for (int i = 0 ; i <= 20 ; i++) {
     outputManager.loadNumberArraySameValue(i%10);
     outputManager.outputDisplay();
@@ -131,6 +133,10 @@ void setup() {
 
   debugMsgMain("Start up WDT...");
   enableWatchdog();
+
+  counterManager.setCounterValues("10;60;120;60;20;20;20;20;20;100;10");
+
+  counterManager.startCounter();
 }
 
 // ************************************************************
@@ -154,7 +160,8 @@ void performOncePerSecondProcessing() {
 
   // -------------------------------------------------------------------------------
   
-  outputManager.loadNumberArraySameValue(second());
+  counterManager.counterCount();
+  outputManager.loadNumberArrayIntegerValue(counterManager.getCurrentCounterVal());
   outputManager.updateOncePerSecond();
 
   // -------------------------------------------------------------------------------

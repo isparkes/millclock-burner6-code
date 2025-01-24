@@ -14,6 +14,10 @@
 
 // -------------------------------------------------------------------------------
 
+const uint32_t DECODE_LED[]          = { 0x800000, 0x400000};
+
+// -------------------------------------------------------------------------------
+
 // The mode selection works on a priority scheme
 // The lower priority mode will be diplayed if enabled
 // ACP and Diags mode override all other modes
@@ -70,7 +74,7 @@ class OutputManager_ {
     clock_digit convertToDigit(int value);
     void dumpNumberArrayValues();
 
-    uint32_t decodeFromNumberArray(byte valueToDecodeTens, byte valueToDecodeUnits, bool blankTens, bool bankUnits, bool blankSeparators, bool bl1, bool bl2, bool led1, bool led2);
+    uint32_t decodeFromNumberArray(byte valueToDecodeTens, byte valueToDecodeUnits, bool blankTens, bool bankUnits, bool led1, bool led2);
 };
 
 extern OutputManager_ &outputManager;

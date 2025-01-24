@@ -68,9 +68,6 @@ void OutputManager_::outputDisplay() {
                                 false,
                                 #endif
                                 false,
-                                false,
-                                false,
-                                false,
                                 false);
   uint32_t tmpnextVal2 = decodeFromNumberArray(
                                 #ifdef NORMAL_DIGIT_OUTPUT
@@ -86,9 +83,6 @@ void OutputManager_::outputDisplay() {
                                 false,
                                 #endif
                                 false,
-                                false,
-                                false,
-                                false,
                                 false);
   uint32_t tmpnextVal3 = decodeFromNumberArray(
                                 #ifdef NORMAL_DIGIT_OUTPUT
@@ -103,28 +97,27 @@ void OutputManager_::outputDisplay() {
                                 false,
                                 false,
                                 #endif
-                                false,
-                                false,
-                                false,
                                 !upOrDown,
                                 digitalRead(PPSPin));
-  uint32_t tmpval1 = tmpnextVal1;
-  uint32_t tmpval2 = tmpnextVal2;
-  uint32_t tmpval3 = tmpnextVal3;
 
+  
   // move the values over, respect the MUTEX on the interrupt, otherwise we get visible glitches
   portENTER_CRITICAL_ISR(&timerMux1);
-  val1 = tmpval1;
-  val2 = tmpval2;
-  val3 = tmpval3;
+  val1 = tmpnextVal1;
+  val2 = tmpnextVal2;
+  val3 = tmpnextVal3;
   portEXIT_CRITICAL_ISR(&timerMux1);
 }
 
 // ************************************************************
 // Turn a display pair into a uint24 ready for output
 // ************************************************************
-uint32_t OutputManager_::decodeFromNumberArray(byte valueToDecodeTens, byte valueToDecodeUnits, bool blankTens, bool blankUnits, bool blankSeparators, bool bl1, bool bl2, bool led1, bool led2) {
+uint32_t OutputManager_::decodeFromNumberArray(byte valueToDecodeTens, byte valueToDecodeUnits, bool blankTens, bool blankUnits, bool led1, bool led2) {
   uint32_t decoded = 0;
+  if (!blankTens) decoded = DECODE_DIGIT[valueToDecodeTens];
+  if (!blankUnits) decoded = decoded | DECODE_DIGIT[valueToDecodeUnits] << 10;
+  if (led1) decoded |= DECODE_LED[0];
+  if (led2) decoded |= DECODE_LED[1];
   return decoded;
 }
 

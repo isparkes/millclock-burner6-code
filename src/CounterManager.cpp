@@ -6,6 +6,9 @@
 //**********************************************************************************
 //**********************************************************************************
 
+// ************************************************************
+// Reset the current counter values to the initial values 
+// ************************************************************
 void CounterManager_::copyInitialArrayToCurrent() {
   // Copy the initial values to the current values
   for (int digit = 0 ; digit < VALUES_PER_DIGIT ; digit++) {
@@ -13,24 +16,27 @@ void CounterManager_::copyInitialArrayToCurrent() {
   }
 }
 
+// ************************************************************
+// 
+// ************************************************************
 void CounterManager_::copyInitialRepetitionsToCurrent() {
   _repetitionsCurrent = _repetitionsInitial;
 }
 
 // ************************************************************
-// 
+// Set and parse the counter values from the separated string
 // ************************************************************
 void CounterManager_::setCounterValues(String inputString) {
-  _inputString = inputString;
-  int fieldCountFound = getValueCount(_inputString, ';');
+  _counterValues = inputString;
+  int fieldCountFound = getValueCount(_counterValues, ';');
   if (fieldCountFound != FIELD_COUNT_EXPECTED) {
-    debugMsgCmg("Wrong number of fields");
+    debugMsgCmg("Wrong number of fields. Got (" + inputString + ")");
   } else {
     int index = 0;
 
     // Digits
     for (int digit = 0 ; digit < VALUES_PER_DIGIT ; digit++) {
-      String valueString = getValueAtIndex(_inputString, ';', index);
+      String valueString = getValueAtIndex(_counterValues, ';', index);
       int value = atoi(valueString.c_str());
       index++;
       debugMsgCmg("Value at index " + String(index) + " = " + String(value));
@@ -38,7 +44,7 @@ void CounterManager_::setCounterValues(String inputString) {
     }
 
     // Repetitons
-    String valueString = getValueAtIndex(_inputString, ';', index);
+    String valueString = getValueAtIndex(_counterValues, ';', index);
     _repetitionsInitial = atoi(valueString.c_str());
     index++;
     debugMsgCmg("Repetitions: " + String(_repetitionsInitial));
@@ -50,25 +56,65 @@ void CounterManager_::setCounterValues(String inputString) {
 }
 
 // ************************************************************
-// 
+// Set and parse the counter values from the separated string
+// ************************************************************
+String CounterManager_::getCounterValues() {
+  return _counterValues;
+}
+
+// ************************************************************
+// Get the repetition value
+// ************************************************************
+int CounterManager_::getRepetitions() {
+  return _repetitionsInitial;
+}
+
+// ************************************************************
+// Set and parse the counter values from the separated string
+// ************************************************************
+String CounterManager_::getCounterValuesCurrent() {
+  String returnVal = "";
+  for (int digit = 0 ; digit < VALUES_PER_DIGIT ; digit++) {
+    returnVal = returnVal + String(_digitCurrentValues[digit]) + ";";
+  }
+  return returnVal;
+}
+
+// ************************************************************
+// Get the repetition value
+// ************************************************************
+int CounterManager_::getRepetitionsCurrent() {
+  return _repetitionsCurrent;
+}
+
+// ************************************************************
+// Set the repetition value
+// ************************************************************
+void CounterManager_::setRepetitions(int inputRepetitions) {
+  _repetitionsInitial = inputRepetitions;
+  copyInitialRepetitionsToCurrent();
+}
+
+// ************************************************************
+// Start/restart the counter
 // ************************************************************
 void CounterManager_::startCounter() {
   debugMsgCmg("!!!Starting Counter");
+  _counterRunning = true;
+}
+
+// ************************************************************
+// 
+// ************************************************************
+void CounterManager_::resetCounter() {
+  debugMsgCmg("!!!Restarting Counter");
   copyInitialArrayToCurrent();
   copyInitialRepetitionsToCurrent();
   _counterRunning = true;
 }
 
 // ************************************************************
-// 
-// ************************************************************
-void CounterManager_::restartCounter() {
-  debugMsgCmg("!!!Restarting Counter");
-  _counterRunning = true;
-}
-
-// ************************************************************
-// 
+// Stop/pause the counter
 // ************************************************************
 void CounterManager_::stopCounter() {
   debugMsgCmg("!!!Stopping Counter");
@@ -76,7 +122,7 @@ void CounterManager_::stopCounter() {
 }
 
 // ************************************************************
-// 
+// Do a count - called once per second
 // ************************************************************
 void CounterManager_::counterCount() {
   if (!_counterRunning) {
@@ -95,10 +141,9 @@ void CounterManager_::counterCount() {
 
   // did we run off the end?
   if(valueIndex == 10) {
-    debugMsgCmg("Repetitions remaining: " + String(_repetitionsCurrent) + " of " + String(_repetitionsInitial));
     if (_repetitionsCurrent > 0) {
       _repetitionsCurrent--;
-      debugMsgCmg("New repetition");
+      debugMsgCmg("New repetition: Remaining: " + String(_repetitionsCurrent) + " of " + String(_repetitionsInitial));
 
       copyInitialArrayToCurrent();
       valueIndex = 0;
@@ -113,13 +158,22 @@ void CounterManager_::counterCount() {
     _digitCurrentValues[valueIndex]--;
   }
 
+  #ifdef CMG_EXTENDED_DEBUG
   debugMsgCmg("Value of digit " + String(valueIndex) + " = " + String(foundValue) + " (" + String(_digitCurrentValues[valueIndex]) + ")");
+  #endif
 
   for (int digit = 0 ; digit < DIGIT_COUNT ; digit++) {
     outputValue = outputValue * 10 + foundValue;
   }
 
   _currentCount = outputValue;
+}
+
+// ************************************************************
+// 
+// ************************************************************
+bool CounterManager_::isCounterRunning() {
+  return _counterRunning;
 }
 
 // ************************************************************

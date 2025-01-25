@@ -17,6 +17,9 @@ typedef struct {
   String WiFiPassword;
   bool WifiOnAtStart;
 
+  String counterValues;
+  int repetitions;
+
   bool testMode;
   bool wasSetup;
 } spiffs_config_t;

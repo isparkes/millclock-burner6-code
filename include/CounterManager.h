@@ -8,8 +8,7 @@
 #include "utilities.h"
 
 #define VALUES_PER_DIGIT        10
-#define REPETITIONS             1
-#define FIELD_COUNT_EXPECTED    VALUES_PER_DIGIT + REPETITIONS
+#define FIELD_COUNT_EXPECTED    VALUES_PER_DIGIT
 
 // ----------------------------------------------------------------------------------------------------
 // ------------------------------------- SPIFFS Clock Component ---------------------------------------
@@ -28,16 +27,24 @@ class CounterManager_
 
   public:
     void setCounterValues(String counterArray);
+    String getCounterValues();
+    String getCounterValuesCurrent();
+
+    int getRepetitions();
+    void setRepetitions(int inputRepetitions);
+    int getRepetitionsCurrent();
+
     void startCounter();
     void stopCounter();
-    void restartCounter();
+    void resetCounter();
     void counterCount();
+    bool isCounterRunning();
     bool isCounterExpired();
     unsigned int getCurrentCounterVal();
   private:
     void copyInitialArrayToCurrent();
     void copyInitialRepetitionsToCurrent();
-    String _inputString = "";
+    String _counterValues = "";
     bool _counterRunning = false;
     bool _counterDone = false;
     byte _digitInitialValues[VALUES_PER_DIGIT];

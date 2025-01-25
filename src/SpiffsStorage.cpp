@@ -70,6 +70,12 @@ bool SpiffsStorage_::getConfigFromSpiffs()
         cc->WifiOnAtStart = json["WifiOnAtStart"].as<bool>();
         debugMsgSpfX("Loaded WifiOnAtStart: " + String(cc->WifiOnAtStart));
 
+        cc->counterValues = json["counterValues"].as<String>();
+        debugMsgSpfX("Loaded counterValues: " + cc->counterValues);
+
+        cc->repetitions = json["repetitions"];
+        debugMsgSpfX("Loaded repetitions: " + String(cc->repetitions));
+
         loaded = true;
       }
       else
@@ -101,6 +107,8 @@ void SpiffsStorage_::saveConfigToSpiffs()
   json["WiFiSSID"] = cc->WiFiSSID;
   json["WiFiPassword"] = cc->WiFiPassword;
   json["WifiOnAtStart"] = cc->WifiOnAtStart;
+  json["counterValues"] = cc->counterValues;
+  json["repetitions"] = cc->repetitions;
   
   File configFile = SPIFFS.open("/config/config.json", "w");
   if (!configFile)

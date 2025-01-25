@@ -20,6 +20,7 @@
 #include <esp_task_wdt.h>
 #include "WiFiManager.h"
 #include "OutputManager.h"
+#include "CounterManager.h"
 
 // -------------------------------------------------------------------------------
 
@@ -50,6 +51,11 @@ void resetWifiHandler(AsyncWebServerRequest *request);
 void getI2CScanHandler(AsyncWebServerRequest *request);
 void getSPIFFSScanHandler(AsyncWebServerRequest *request);
 void saveStatsHandler(AsyncWebServerRequest *request);
+
+void startCounterHandler(AsyncWebServerRequest *request);
+void stopCounterHandler(AsyncWebServerRequest *request);
+void resetCounterHandler(AsyncWebServerRequest *request);
+void counterStatusHandler(AsyncWebServerRequest *request);
 
 void restartHandler(AsyncWebServerRequest *request);
 

@@ -6,11 +6,12 @@
 typedef void (*DebugCallback) (String);
 
 // Extended debug settings - these allow trace level debugging
-#define OTM_EXTENDED_DEBUG
+#define OTM_EXTENDED_DEBUG_OFF
 #define WFM_EXTENDED_DEBUG_OFF
 #define SPF_EXTENDED_DEBUG_OFF
 #define CDM_EXTENDED_DEBUG_OFF
-#define BLK_EXTENDED_DEBUG_OFF
+#define CMG_EXTENDED_DEBUG_OFF
+#define UTL_EXTENDED_DEBUG_OFF
 
 // Basic debug settings
 #ifdef DEBUG

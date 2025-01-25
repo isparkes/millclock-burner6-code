@@ -65,8 +65,26 @@
                             <td>Version</td>
                             <td id="version"></td>
                         </tr>
+                        <tr>
+                            <td>Counter counts</td>
+                            <td id="counterValues"></td>
+                        </tr>
+                        <tr>
+                            <td>Counter repetitions</td>
+                            <td id="repetitions"></td>
+                        </tr>
                     </tbody>
                 </table>
+            </div>
+            <div class="container after-fixed-navbar" role="main">
+                <h3 class="sub-header">Counter Control</h3>
+                <div class="form-horizontal">
+                    <div class="btn-group" role="group" aria-label="Basic example">
+                        <button type="button" class="btn btn-primary" onclick="startCounter()">Start</button>
+                        <button type="button" class="btn btn-primary" onclick="stopCounter()">Stop</button>
+                        <button type="button" class="btn btn-primary" onclick="resetCounter()">Reset</button>
+                    </div>
+                </div>
             </div>
         </div>
     </body>
@@ -101,7 +119,40 @@
         .then(() => removeLoader());
     };
 
-    $('body').append('<div style="" id="loadingDiv"><div class="loader">Loading...</div></div>');
+    getCounterStatusAPI = function getCounterStatusAPI() {
+        var deferred = $.Deferred();
+        console.log('get counter status');
+        var ajaxOptions = {
+            url: '/api/counterStatus',
+            type: 'GET',
+            Accept: 'application/json; charset=utf-8'
+        };
+        $.ajax(ajaxOptions).done(function (summary) {
+            console.log("Received data: " + JSON.stringify(summary));
+            deferred.resolve(summary);
+        }).fail(function (jqXHR) {
+            console.log("Get api error " + jqXHR.status);
+            deferred.reject(jqXHR.status);
+        });
+        return deferred;
+    };
+
+    getCounterStatus = function() {
+        getCounterStatusAPI().then(function(status){
+            $("#counterValues").text(status.counterValues);
+            $("#repetitions").text(status.repetitions);
+        });
+    };
+
+    var timerVar = setInterval(statusTimer, 1000);
+
+    function statusTimer() {
+        getCounterStatus();
+    }
+
+    function addLoader() {
+        $('body').append('<div style="" id="loadingDiv"><div class="loader">Loading...</div></div>');
+    }
 
     function removeLoader(){
         $( "#loadingDiv" ).fadeOut(500, function() {
@@ -109,6 +160,46 @@
         });
     }
 
+    doGet = function getClockSummary(urlToHit) {
+        var deferred = $.Deferred();
+        console.log('get summary');
+        var ajaxOptions = {
+            url: urlToHit,
+            type: 'GET',
+            Accept: 'application/json; charset=utf-8'
+        };
+        $.ajax(ajaxOptions).done(function (data) {
+            console.log("Received data: " + JSON.stringify(data));
+            deferred.resolve(data);
+        }).fail(function (jqXHR) {
+            console.log("Get api error " + jqXHR.status);
+            deferred.reject(jqXHR.status);
+        });
+        return deferred;
+    };
+        
+    startCounter = function () {
+        addLoader();
+        doGet('/api/startCounter').then(function (config) {
+            removeLoader();
+        })
+    }    
+
+    stopCounter = function () {
+        addLoader();
+        doGet('/api/stopCounter').then(function (config) {
+            removeLoader();
+        })
+    }    
+
+    resetCounter = function () {
+        addLoader();
+        doGet('/api/resetCounter').then(function (config) {
+            removeLoader();
+        })
+    }    
+
+    addLoader();
     getSummary();
 </script>
 </html>

@@ -27,6 +27,12 @@ void WebManager_::begin() {
   server.on("/api/postWiFiCredentials", HTTP_POST, postWiFiCredentialsHandler);
   server.on("/api/credentials", HTTP_GET, getCredentialsHandler);
 
+  // Counter control
+  server.on("/api/startCounter", HTTP_GET, startCounterHandler);
+  server.on("/api/stopCounter", HTTP_GET, stopCounterHandler);
+  server.on("/api/resetCounter", HTTP_GET, resetCounterHandler);
+  server.on("/api/counterStatus", HTTP_GET, counterStatusHandler);
+
   // Utilities
   server.on("/utils/resetwifi", HTTP_GET, resetWifiHandler);
   server.on("/utils/scanI2C", HTTP_GET, getI2CScanHandler);

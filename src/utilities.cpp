@@ -60,6 +60,8 @@ void resetOptions() {
 
   cc->WiFiSSID = "";
   cc->WiFiPassword = "";
+  cc->repetitions = 10;
+  cc->counterValues = "1;1;1;1;1;1;1;1;1;1";
 }
 
 // ************************************************************
@@ -195,6 +197,8 @@ void getConfigDataHandler(AsyncWebServerRequest *request) {
   JsonObject &root = jsonBuffer.createObject();
 
   root["WifiOnAtStart"] = cc->WifiOnAtStart;
+  root["counterValues"] = counterManager.getCounterValues();
+  root["repetitions"] = counterManager.getRepetitions();
 
   root.printTo(*response);
   request->send(response);
@@ -287,7 +291,17 @@ void postConfigDataHandler(AsyncWebServerRequest *request) {
 
     // ------------------------------------------------------------
 
-    compareAndUpdateBool(json, "WifiOnAtStart",&cc->WifiOnAtStart);
+    compareAndUpdateBool  (json, "WifiOnAtStart",&cc->WifiOnAtStart);
+    compareAndUpdateInt   (json, "repetitions",&cc->repetitions);
+    compareAndUpdateString(json, "counterValues",&cc->counterValues);
+
+    if (!counterManager.getCounterValues().equals(cc->counterValues)) {
+      counterManager.setCounterValues(cc->counterValues);
+    }
+
+    if (counterManager.getRepetitions() != cc->repetitions) {
+      counterManager.setRepetitions(cc->repetitions);
+    }
 
     // ------------------------------------------------------------
 
@@ -506,6 +520,45 @@ void resetWiFi() {
 void resetAll() {
   resetOptions();
   resetWiFi();
+}
+
+// ************************************************************
+// Start/restart the counter
+// ************************************************************
+void startCounterHandler(AsyncWebServerRequest *request) {
+  debugMsgUtl("Got counter start request");
+  counterManager.startCounter();
+  request->send(200, "text/json", "{\"status\": \"Counter started\"}");
+}
+
+// ************************************************************
+// Stop/pause the counter
+// ************************************************************
+void stopCounterHandler(AsyncWebServerRequest *request) {
+  debugMsgUtl("Got counter stop request");
+  counterManager.stopCounter();
+  request->send(200, "text/json", "{\"status\": \"Counter stopped\"}");
+}
+
+// ************************************************************
+// Reset the counter
+// ************************************************************
+void resetCounterHandler(AsyncWebServerRequest *request) {
+  debugMsgUtl("Got counter reset request");
+  counterManager.resetCounter();
+  request->send(200, "text/json", "{\"status\": \"Counter reset\"}");
+}
+
+// ************************************************************
+// Reset the counter
+// ************************************************************
+void counterStatusHandler(AsyncWebServerRequest *request) {
+  #ifdef UTL_EXTENDED_DEBUG
+  debugMsgUtl("Got counter status request");
+  #endif
+  String counterValues = counterManager.getCounterValuesCurrent();
+  int repetitions = counterManager.getRepetitionsCurrent();
+  request->send(200, "text/json", "{\"counterValues\": \"" + counterValues + "\", \"repetitions\": \"" + String(repetitions) + "\"}");
 }
 
 // ************************************************************

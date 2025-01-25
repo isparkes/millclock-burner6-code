@@ -134,7 +134,11 @@ void setup() {
   debugMsgMain("Start up WDT...");
   enableWatchdog();
 
-  counterManager.setCounterValues("10;60;120;60;20;20;20;20;20;100;10");
+  // -------------------------------------------------------------------------
+
+  debugMsgMain("Load counter configuration...");
+  counterManager.setCounterValues(cc->counterValues);
+  counterManager.setRepetitions(cc->repetitions);
 
   counterManager.startCounter();
 }
@@ -198,6 +202,16 @@ void performOncePerMinuteProcessing() {
   debugMsgMain("---> OncePerMinuteProcessing");
   // Usage stats
   cs->uptimeMins++;
+
+  if (counterManager.isCounterRunning()) {
+    debugMsgMain("Counter Running ---> " + counterManager.getCounterValuesCurrent() + ", Repetitons: " + String(counterManager.getRepetitionsCurrent()));
+  } else {
+    if (counterManager.isCounterExpired()) {
+      debugMsgMain("Counter Expired!");
+    } else {
+      debugMsgMain("Counter Stopped!");
+    }
+  }
 }
 
 // ************************************************************

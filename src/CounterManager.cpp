@@ -126,7 +126,9 @@ void CounterManager_::stopCounter() {
 // ************************************************************
 void CounterManager_::counterCount() {
   if (!_counterRunning) {
+    #ifdef CMG_EXTENDED_DEBUG
     debugMsgCmg("Counter not running.");
+    #endif
     return;
   }
 

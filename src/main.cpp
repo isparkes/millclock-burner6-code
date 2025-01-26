@@ -204,7 +204,7 @@ void performOncePerMinuteProcessing() {
   cs->uptimeMins++;
 
   if (counterManager.isCounterRunning()) {
-    debugMsgMain("Counter Running ---> " + counterManager.getCounterValuesCurrent() + ", Repetitons: " + String(counterManager.getRepetitionsCurrent()));
+    debugMsgMain("Counter Running ---> " + counterManager.getCounterValuesCurrent() + " Repetitons: " + String(counterManager.getRepetitionsCurrent()));
   } else {
     if (counterManager.isCounterExpired()) {
       debugMsgMain("Counter Expired!");

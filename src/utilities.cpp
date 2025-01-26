@@ -556,9 +556,19 @@ void counterStatusHandler(AsyncWebServerRequest *request) {
   #ifdef UTL_EXTENDED_DEBUG
   debugMsgUtl("Got counter status request");
   #endif
-  String counterValues = counterManager.getCounterValuesCurrent();
+  String counterValuesCurrent = counterManager.getCounterValuesCurrent();
+  String counterValuesInitial = counterManager.getCounterValues();
   int repetitions = counterManager.getRepetitionsCurrent();
-  request->send(200, "text/json", "{\"counterValues\": \"" + counterValues + "\", \"repetitions\": \"" + String(repetitions) + "\"}");
+  String counterStatus = "Unknown";
+  if (counterManager.isCounterRunning()) {
+    counterStatus = "Running";
+  } else if (counterManager.isCounterExpired()) {
+    counterStatus = "Finished";
+  } else {
+    counterStatus = "Stopped";
+  }
+
+  request->send(200, "text/json", "{\"counterValuesCurrent\": \"" + counterValuesCurrent + "\", \"counterValuesInitial\": \"" + counterValuesInitial + "\", \"repetitions\": \"" + String(repetitions) + "\", \"counterStatus\": \"" + counterStatus + "\"}");
 }
 
 // ************************************************************

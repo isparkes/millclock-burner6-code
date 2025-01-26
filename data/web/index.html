@@ -66,12 +66,20 @@
                             <td id="version"></td>
                         </tr>
                         <tr>
-                            <td>Counter counts</td>
+                            <td>Counter counts (Autoreload <input class="form-check-input" type="checkbox" value="" id="refreshToggle" onclick="toggleRefresh()">)</td>
                             <td id="counterValues"></td>
                         </tr>
                         <tr>
                             <td>Counter repetitions</td>
                             <td id="repetitions"></td>
+                        </tr>
+                        <tr>
+                            <td>Counter status</td>
+                            <td id="status"></td>
+                        </tr>
+                        <tr>
+                            <td>Remaining run time</td>
+                            <td id="timeRemaining"></td>
                         </tr>
                     </tbody>
                 </table>
@@ -109,6 +117,7 @@
     };
 
     getSummary = function() {
+        getCounterStatus();
         getClockSummary().then(function(summary){
             $("#ip").text(summary.ip);
             $("#mac").text(summary.mac);
@@ -139,15 +148,55 @@
 
     getCounterStatus = function() {
         getCounterStatusAPI().then(function(status){
-            $("#counterValues").text(status.counterValues);
+            $("#counterValues").text(status.counterValuesCurrent);
             $("#repetitions").text(status.repetitions);
+            $("#status").text(status.counterStatus);
+
+            // Calculate run time
+            var timeRemainingThisLoop = status.counterValuesCurrent.split(";").map(function(item) { return parseInt("0"+item, 10); }).reduce((accumulator, currentValue) => { return accumulator + currentValue},0);
+            var timeRemainingFullLoops = status.counterValuesInitial.split(";").map(function(item) { return parseInt("0"+item, 10); }).reduce((accumulator, currentValue) => { return accumulator + currentValue},0);
+
+            var timeRemaining = timeRemainingThisLoop;
+            if (status.repetitions > 1) timeRemaining+=(timeRemainingFullLoops*(status.repetitions-1));
+
+            // Convert to readable
+            var days = parseInt(timeRemaining / 86400);
+            timeRemaining = timeRemaining - (days*86400);
+            var hours = parseInt(timeRemaining / 3600);
+            timeRemaining = timeRemaining - (hours*3600);
+            var minutes = parseInt(timeRemaining / 60);
+            timeRemaining = timeRemaining - (minutes*60);
+            seconds = timeRemaining;
+
+            if (days > 0) {
+                timeString = days.toString().padStart(2, '0') + 'd ' +
+                    hours.toString().padStart(2, '0') + 'h' + 
+                    minutes.toString().padStart(2, '0') + 'm' + 
+                    seconds.toString().padStart(2, '0') + 's';
+            } else {
+                timeString = hours.toString().padStart(2, '0') + 'h' + 
+                    minutes.toString().padStart(2, '0') + 'm' + 
+                    seconds.toString().padStart(2, '0') + 's';
+            }
+
+            $("#timeRemaining").text(timeString);
         });
     };
 
-    var timerVar = setInterval(statusTimer, 1000);
+    var refreshTimer = null;
 
     function statusTimer() {
         getCounterStatus();
+        toggleRefresh();
+    }
+
+    function toggleRefresh() {
+        var checkedValue = $('#refreshToggle').is(":checked");
+        if (checkedValue) {
+            refreshTimer = setTimeout(statusTimer, 1000);
+        } else {
+            clearTimeout(refreshTimer);
+        }
     }
 
     function addLoader() {
@@ -180,23 +229,24 @@
         
     startCounter = function () {
         addLoader();
+        getCounterStatus();
         doGet('/api/startCounter').then(function (config) {
             removeLoader();
-        })
+        }).then(function () { getCounterStatus();});
     }    
 
     stopCounter = function () {
         addLoader();
         doGet('/api/stopCounter').then(function (config) {
             removeLoader();
-        })
+        }).then(function () { getCounterStatus();});
     }    
 
     resetCounter = function () {
         addLoader();
         doGet('/api/resetCounter').then(function (config) {
             removeLoader();
-        })
+        }).then(function () { getCounterStatus();});
     }    
 
     addLoader();

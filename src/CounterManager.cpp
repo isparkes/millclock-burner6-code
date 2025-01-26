@@ -143,7 +143,7 @@ void CounterManager_::counterCount() {
 
   // did we run off the end?
   if(valueIndex == 10) {
-    if (_repetitionsCurrent > 0) {
+    if (_repetitionsCurrent > 1) {
       _repetitionsCurrent--;
       debugMsgCmg("New repetition: Remaining: " + String(_repetitionsCurrent) + " of " + String(_repetitionsInitial));
 
@@ -154,6 +154,7 @@ void CounterManager_::counterCount() {
       _counterRunning = false;
       _counterDone = true;
       foundValue = 0;
+      _repetitionsCurrent = 0;
     }
   } else {
     foundValue = valueIndex;

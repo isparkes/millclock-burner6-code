@@ -7,6 +7,9 @@
 #include "WiFiManager.h"
 #include "OutputManager.h"
 #include "CounterManager.h"
+#ifdef FEATURE_MENU
+#include "MenuManager.h"
+#endif
 
 void setup() {
   // Show that we booted - useful for remote debugging
@@ -107,6 +110,15 @@ void setup() {
 
   // -------------------------------------------------------------------------
   
+  #ifdef FEATURE_MENU
+  debugMsgMain("Starting OLED");
+  oled.setUp();
+  oled.clearDisplay();
+  menuManager.flashMenuMessage(CLOCK_MENU_TITLE, "Starting");
+  #endif
+
+  // -------------------------------------------------------------------------
+  
   debugMsgMain("Initialising WiFi");
   wifiManager.setUpWiFi();
 
@@ -124,8 +136,9 @@ void setup() {
   // -------------------------------------------------------------------------
   
   // Emergency WiFi start
+  delay(5000);
   if ((WiFi.isConnected() == false) && (ENC_BTN) == LOW) {
-      debugMsgMain("Start emergency open AP");
+      debugMsgMain("Start open AP");
       wifiManager.openAccessPortal();
   }
   
@@ -149,6 +162,12 @@ void setup() {
 void performOncePerLoop() {
   
   outputManager.outputDisplay();
+
+  // -------------------------------------------------------------------------------
+
+  #ifdef FEATURE_MENU
+  menuManager.menuLoop();
+  #endif
 
   // -------------------------------------------------------------------------------
 
@@ -177,6 +196,13 @@ void performOncePerSecondProcessing() {
     setLedFlashType(1);
   }
 
+  // -------------------------------------------------------------------------------
+
+  // Service the menu
+  #ifdef FEATURE_MENU
+  menuManager.menuOncePerSecond();
+  #endif
+  
   // -------------------------------------------------------------------------------
   
   debugManager.debugAutoOffCheck();

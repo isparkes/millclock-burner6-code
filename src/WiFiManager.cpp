@@ -76,6 +76,16 @@ void WiFiEvent(WiFiEvent_t event, arduino_event_info_t info)
   case ARDUINO_EVENT_WIFI_READY:
     debugMsgWfm("WiFi ready");
     break;
+//  case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
+//    debugMsgWfm("AP_STA Connected to station");
+//    break;
+//  case ARDUINO_EVENT_WIFI_AP_STAIPASSIGNED:
+//    debugMsgWfm("AP_STA Connected to station");
+//    debugMsgWfm("IP Address: " + WiFi.localIP().toString());
+//    break;
+//  case ARDUINO_EVENT_WIFI_AP_STOP:
+//    debugMsgWfm("AP stop");
+//    break;
   default:
     debugMsgWfm("Wifi event (not mapped): " + String(event));
     break;

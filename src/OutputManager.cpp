@@ -56,10 +56,10 @@ void OutputManager_::loadNumberArraySameValue(byte value) {
 void OutputManager_::outputDisplay() {
   uint32_t tmpnextVal1 = decodeFromNumberArray(
                                 #ifdef NORMAL_DIGIT_OUTPUT
-                                currNumberArray[H10], 
-                                currNumberArray[H1],
-                                digitBlanked[H10],
-                                digitBlanked[H1],
+                                numberArray[H10], 
+                                numberArray[H1],
+                                false,
+                                false,
                                 #endif
                                 #ifdef REVERSE_DIGIT_OUTPUT
                                 numberArray[S1], 
@@ -71,10 +71,10 @@ void OutputManager_::outputDisplay() {
                                 false);
   uint32_t tmpnextVal2 = decodeFromNumberArray(
                                 #ifdef NORMAL_DIGIT_OUTPUT
-                                currNumberArray[M10], 
-                                currNumberArray[M1],
-                                digitBlanked[M10],
-                                digitBlanked[M1],
+                                numberArray[M10], 
+                                numberArray[M1],
+                                false,
+                                false,
                                 #endif
                                 #ifdef REVERSE_DIGIT_OUTPUT
                                 numberArray[M1], 
@@ -86,10 +86,10 @@ void OutputManager_::outputDisplay() {
                                 false);
   uint32_t tmpnextVal3 = decodeFromNumberArray(
                                 #ifdef NORMAL_DIGIT_OUTPUT
-                                currNumberArray[S10], 
-                                currNumberArray[S1],
-                                digitBlanked[S10],
-                                digitBlanked[S1],
+                                numberArray[S10], 
+                                numberArray[S1],
+                                false,
+                                false,
                                 #endif
                                 #ifdef REVERSE_DIGIT_OUTPUT
                                 numberArray[H1], 

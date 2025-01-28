@@ -21,9 +21,13 @@
 // -------------------------------------------------------------------------------
 
 // If we output the digits reversed
-#define REVERSE_DIGIT_OUTPUT        // REVERSE_DIGIT_OUTPUT | NORMAL_DIGIT_OUTPUT
+#define NORMAL_DIGIT_OUTPUT        // REVERSE_DIGIT_OUTPUT | NORMAL_DIGIT_OUTPUT
 
 // -------------------------------------------------------------------------------
 
-#define CLOCK_MENU_TITLE "Miniac" 
+#define FEATURE_MENU
+
+// -------------------------------------------------------------------------------
+
+#define CLOCK_MENU_TITLE "Burner6" 
 

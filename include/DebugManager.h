@@ -23,6 +23,7 @@ typedef void (*DebugCallback) (String);
 #define debugMsgWfm(message) debugManager.debugMsg("[WFM]", message);
 #define debugMsgCdm(message) debugManager.debugMsg("[CDM]", message);
 #define debugMsgCmg(message) debugManager.debugMsg("[GMC]", message);
+#define debugMsgMnm(message) debugManager.debugMsg("[MNM]", message);
 #else
 #define debugMsgMain(message)
 #define debugMsgOtm(message)
@@ -32,6 +33,7 @@ typedef void (*DebugCallback) (String);
 #define debugMsgWfm(message)
 #define debugMsgCdm(message)
 #define debugMsgCmg(message)
+#define debugMsgMnm(message)
 #endif
 
 // Extended debug settings

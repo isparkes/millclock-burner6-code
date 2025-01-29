@@ -79,6 +79,8 @@ void OLED_::showStatusLine()
 {
   _display->drawRect(STATUS_BOX_X, STATUS_BOX_Y, STATUS_BOX_W, STATUS_BOX_H, WHITE);
   drawWiFiInd();
+  drawRunInd();
+  drawEndInd();
   _display->display();
 }
 
@@ -96,17 +98,21 @@ void OLED_::drawWiFiInd() {
   }
 }
 
-void OLED_::drawTimeInd() {
-  _display->setCursor(TIME_IND_X,STATUS_LINE_Y);
-  _display->print(_timeText);
+void OLED_::drawRunInd() {
+  _display->setCursor(RUN_IND_X,STATUS_LINE_Y);
+  if (counterManager.isCounterRunning()) {
+    _display->print("R");
+  } else {
+    _display->print("-");
+  }
 }
 
-void OLED_::drawAMInd() {
-  _display->setCursor(AM_IND_X,STATUS_LINE_Y);
-  if (isAM()) {
-    _display->print("AM");
+void OLED_::drawEndInd() {
+  _display->setCursor(END_IND_X,STATUS_LINE_Y);
+  if (counterManager.isCounterExpired()) {
+    _display->print("X");
   } else {
-    _display->print("PM");
+    _display->print("-");
   }
 }
 

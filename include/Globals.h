@@ -23,6 +23,8 @@ extern int secsDeltaAbs;
 extern int secsDelta;
 extern bool upOrDown;  
 
+extern bool blanked;  
+
 // ************************************************************
 // Shared config objects
 // ************************************************************
@@ -42,6 +44,8 @@ extern portMUX_TYPE timerMux1;
 extern portMUX_TYPE encoderMux;
 
 extern bool doAutoReconnect;
+
+extern bool encoderToggle;
 
 extern String uniqHostname;
 

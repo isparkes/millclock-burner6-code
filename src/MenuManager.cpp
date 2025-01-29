@@ -47,6 +47,9 @@ void MenuManager_::systemMenu() {
   menuMode = menu;
   byte menuCount = 1;
   oledMenu.menuTitle = "System";
+  oledMenu.menuItems[menuCount] = "Stop Burn";      oledMenu.menuActions[menuCount++] = stopBurn;
+  oledMenu.menuItems[menuCount] = "Start Burn";     oledMenu.menuActions[menuCount++] = startBurn;
+  oledMenu.menuItems[menuCount] = "Reset Burn";     oledMenu.menuActions[menuCount++] = resetBurn;
   oledMenu.menuItems[menuCount] = "Restart Device"; oledMenu.menuActions[menuCount++] = restartClock;
   oledMenu.menuItems[menuCount] = "Save config";    oledMenu.menuActions[menuCount++] = saveConfig;
   oledMenu.menuItems[menuCount] = "Save stats";     oledMenu.menuActions[menuCount++] = saveStats;
@@ -59,15 +62,6 @@ void MenuManager_::systemMenu() {
   oledMenu.menuItems[menuCount] = "Debug on 10m";   oledMenu.menuActions[menuCount++] = debugOn10mins;
   #endif
   oledMenu.menuItems[menuCount] = "Reset WiFi";     oledMenu.menuActions[menuCount++] = resetWiFiInfo;
-  oledMenu.menuItems[menuCount] = "Back";           oledMenu.menuActions[menuCount++] = backToMain;
-  oledMenu.noOfmenuItems = --menuCount;
-}
-
-void MenuManager_::setTimeMenu() {
-  resetMenu();
-  menuMode = menu;
-  byte menuCount = 1;
-  oledMenu.menuTitle = "Set Time";
   oledMenu.menuItems[menuCount] = "Back";           oledMenu.menuActions[menuCount++] = backToMain;
   oledMenu.noOfmenuItems = --menuCount;
 }
@@ -185,9 +179,24 @@ void MenuManager_::menuActions(menuTargets selectedAction) {
 
     // --------------------------------------------------
     // "System Menu Items"
+    case stopBurn: {
+      counterManager.stopCounter();
+      systemMenu();
+      break;
+    }
+    case startBurn: {
+      counterManager.startCounter();
+      systemMenu();
+      break;
+    }
+    case resetBurn: {
+      counterManager.resetCounter();
+      systemMenu();
+      break;
+    }
     case restartClock: {
       spiffsStorage.saveStatsToSpiffs();
-      flashMenuMessage("Restart","Restarting\nchronometer\ndevice now");
+      flashMenuMessage("Restart","Restarting\burner\ndevice now");
       delay(1000);
       ESP.restart();
       break;
@@ -667,6 +676,8 @@ void ICACHE_RAM_ATTR MenuManager_::doEncoder() {
   bool pinA = digitalRead(ENC_APin);
   bool pinB = digitalRead(ENC_BPin);
   int delta = 0;
+
+  encoderToggle = !encoderToggle;
 
   if ( (rotaryEncoder.encoderPrevA == pinA && rotaryEncoder.encoderPrevB == pinB) ) return;  // no change since last time (i.e. reject bounce)
 

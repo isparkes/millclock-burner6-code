@@ -134,9 +134,19 @@ void setup() {
   }
 
   // -------------------------------------------------------------------------
+
+  #ifdef FEATURE_MENU
+  debugMsgMain("Start up Menu Manager...");
+  menuManager.setupMenuManager();
+  oled.setUp();
+  oled.clearDisplay();
+  menuManager.flashMenuMessage(CLOCK_MENU_TITLE, "Welcome to the\nNixie Burner\n" + String(SOFTWARE_VERSION));
+  delay(2000);
+  #endif
+
+  // -------------------------------------------------------------------------
   
   // Emergency WiFi start
-  delay(5000);
   if ((WiFi.isConnected() == false) && (ENC_BTN) == LOW) {
       debugMsgMain("Start open AP");
       wifiManager.openAccessPortal();
@@ -186,6 +196,7 @@ void performOncePerSecondProcessing() {
   counterManager.counterCount();
   outputManager.loadNumberArrayIntegerValue(counterManager.getCurrentCounterVal());
   outputManager.updateOncePerSecond();
+  blanked = counterManager.isCounterExpired();
 
   // -------------------------------------------------------------------------------
   

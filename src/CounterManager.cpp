@@ -111,6 +111,7 @@ void CounterManager_::resetCounter() {
   copyInitialArrayToCurrent();
   copyInitialRepetitionsToCurrent();
   _counterRunning = true;
+  _counterDone = false;
 }
 
 // ************************************************************

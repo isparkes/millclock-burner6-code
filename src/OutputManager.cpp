@@ -58,47 +58,47 @@ void OutputManager_::outputDisplay() {
                                 #ifdef NORMAL_DIGIT_OUTPUT
                                 numberArray[H10], 
                                 numberArray[H1],
-                                false,
-                                false,
+                                blanked,
+                                blanked,
                                 #endif
                                 #ifdef REVERSE_DIGIT_OUTPUT
                                 numberArray[S1], 
                                 numberArray[S10],
-                                false,
-                                false,
+                                blanked,
+                                blanked,
                                 #endif
-                                false,
-                                false);
+                                false,      // separators not used
+                                false);     // separators not used
   uint32_t tmpnextVal2 = decodeFromNumberArray(
                                 #ifdef NORMAL_DIGIT_OUTPUT
                                 numberArray[M10], 
                                 numberArray[M1],
-                                false,
-                                false,
+                                blanked,
+                                blanked,
                                 #endif
                                 #ifdef REVERSE_DIGIT_OUTPUT
                                 numberArray[M1], 
                                 numberArray[M10],
-                                false,
-                                false,
+                                blanked,
+                                blanked,
                                 #endif
-                                false,
-                                false);
+                                false,      // separators not used
+                                false);     // separators not used
   uint32_t tmpnextVal3 = decodeFromNumberArray(
                                 #ifdef NORMAL_DIGIT_OUTPUT
                                 numberArray[S10], 
                                 numberArray[S1],
-                                false,
-                                false,
+                                blanked,
+                                blanked,
                                 #endif
                                 #ifdef REVERSE_DIGIT_OUTPUT
                                 numberArray[H1], 
                                 numberArray[H10],
-                                false,
-                                false,
+                                blanked,
+                                blanked,
                                 #endif
-                                !upOrDown,
-                                digitalRead(PPSPin));
+                                upOrDown,
+                                !counterManager.isCounterRunning());
 
   
   // move the values over, respect the MUTEX on the interrupt, otherwise we get visible glitches

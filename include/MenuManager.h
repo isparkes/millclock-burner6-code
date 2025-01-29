@@ -46,7 +46,10 @@ enum menuTargets {
   saveWiFiPassword,
   enterWiFiSSID,
   saveWiFiSSID,
-  
+
+  stopBurn,
+  startBurn,
+  resetBurn,
   restartClock,
   saveStats,
   saveConfig,

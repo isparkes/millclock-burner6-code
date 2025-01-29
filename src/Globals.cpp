@@ -42,7 +42,11 @@ int secsDeltaAbs;                   // Sawtooth 0..1000 every sec
 int secsDelta;                      // Triangle 0..1000..0 every 2 secs
 bool upOrDown;  
 
+bool blanked = false;
+
 bool doAutoReconnect = false;
+
+bool encoderToggle = false;
 
 // Our network name
 String uniqHostname;

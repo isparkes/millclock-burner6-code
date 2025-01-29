@@ -7,17 +7,14 @@
 #include <Adafruit_SH110X.h>
 #include "TimeLib.h"
 #include "Globals.h"
+#include "CounterManager.h"
 
 // ----------------------- Defines -----------------------
 
-#define PIR_NOT_INSTALLED 0
-#define PIR_NO_MOVEMENT   1
-#define PIR_MOVEMENT      2
-
 #define STATUS_LINE_Y 54
-#define WIFI_IND_X     5
-#define NTP_IND_X     12
-#define G_IND_X       19
+#define WIFI_IND_X    5
+#define RUN_IND_X     12
+#define END_IND_X     19
 #define PIR_IND_X     26
 #define BLANK_IND_X   33
 #define Y_IND_X       40
@@ -83,14 +80,8 @@ class OLED_
     #endif
 
     void drawWiFiInd();
-    void drawNTPInd();
-    void drawPIRInd();
-    void drawBlankInd();
-    void drawGInd();
-    void drawAuxOutInd();
-    void drawBTN2Ind();
-    void drawAMInd();
-    void drawTimeInd();
+    void drawRunInd();
+    void drawEndInd();
 };
 
 extern OLED_ &oled;

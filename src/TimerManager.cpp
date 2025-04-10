@@ -15,19 +15,13 @@ volatile int count0Off = COUNT0_OFF;
 
 // These variables hold the impression data
 extern volatile uint32_t val1;
-extern volatile uint32_t val2;
-extern volatile uint32_t val3;
 
 // These are for debugging
 extern volatile uint16_t impressions;
 
 volatile uint32_t _val1curr = 1;
-volatile uint32_t _val2curr = 1;
-volatile uint32_t _val3curr = 1;
 
 volatile uint32_t _val1 = 0;
-volatile uint32_t _val2 = 0;
-volatile uint32_t _val3 = 0;
 
 // ************************************************************
 // ISR for LED flash update
@@ -51,54 +45,16 @@ void IRAM_ATTR shiftOut24H(uint32_t _val1) {
   uint8_t i;
 
   for (i = 0; i < 24; i++) {
-    digitalWrite(DATA1Pin, !!(_val1 & (1 << (23 - i))));
+    digitalWrite(DATAPin, !!(_val1 & (1 << (23 - i))));
     digitalWrite(CLKPin, HIGH);
     digitalWrite(CLKPin, HIGH);
     digitalWrite(CLKPin, LOW);
     digitalWrite(CLKPin, LOW);
   }
-  digitalWrite(LATCH1Pin, HIGH);
-  digitalWrite(LATCH1Pin, HIGH);
-  digitalWrite(LATCH1Pin, LOW);
-  digitalWrite(LATCH1Pin, LOW);
-}
-
-// ************************************************************
-// Perform the parallel shift out to the registers
-// ************************************************************
-void IRAM_ATTR shiftOut24M(uint32_t _val1) {
-  uint8_t i;
-
-  for (i = 0; i < 24; i++) {
-    digitalWrite(DATA2Pin, !!(_val1 & (1 << (23 - i))));
-    digitalWrite(CLKPin, HIGH);
-    digitalWrite(CLKPin, HIGH);
-    digitalWrite(CLKPin, LOW);
-    digitalWrite(CLKPin, LOW);
-  }
-  digitalWrite(LATCH2Pin, HIGH);
-  digitalWrite(LATCH2Pin, HIGH);
-  digitalWrite(LATCH2Pin, LOW);
-  digitalWrite(LATCH2Pin, LOW);
-}
-
-// ************************************************************
-// Perform the parallel shift out to the registers
-// ************************************************************
-void IRAM_ATTR shiftOut24S(uint32_t _val1) {
-  uint8_t i;
-
-  for (i = 0; i < 24; i++) {
-    digitalWrite(DATA3Pin, !!(_val1 & (1 << (23 - i))));
-    digitalWrite(CLKPin, HIGH);
-    digitalWrite(CLKPin, HIGH);
-    digitalWrite(CLKPin, LOW);
-    digitalWrite(CLKPin, LOW);
-  }
-  digitalWrite(LATCH3Pin, HIGH);
-  digitalWrite(LATCH3Pin, HIGH);
-  digitalWrite(LATCH3Pin, LOW);
-  digitalWrite(LATCH3Pin, LOW);
+  digitalWrite(LATCHPin, HIGH);
+  digitalWrite(LATCHPin, HIGH);
+  digitalWrite(LATCHPin, LOW);
+  digitalWrite(LATCHPin, LOW);
 }
 
 // ************************************************************
@@ -126,58 +82,13 @@ void IRAM_ATTR onTimer1() {
 
   // Load the new values from the output of the outputManager
   _val1 = val1;
-  _val2 = val2;
-  _val3 = val3;
 
   if (_val1 != _val1curr) {
     shiftOut24H(_val1);
     _val1curr = _val1;
   } 
-  if (_val2 != _val2curr) {
-    shiftOut24M(_val2);
-    _val2curr = _val2;
-  }
-  if (_val3 != _val3curr) {
-    shiftOut24S(_val3);
-    _val3curr = _val3;
-  }
 
   portEXIT_CRITICAL_ISR(&timerMux1);
-}
-
-// ************************************************************
-// ISR for 1PPS output
-// ************************************************************
-void IRAM_ATTR onTimer2() {
-  #ifndef COG_CRANK_OUTPUT
-  portENTER_CRITICAL_ISR(&timerMux2);
-  digitalWrite(PPSPin, LOW);
-  portEXIT_CRITICAL_ISR(&timerMux2);
-  #endif
-}
-
-// ************************************************************
-// Trigger 1PPS output
-// ************************************************************
-void triggerOnePulsePerSecShort() {
-  #ifndef COG_CRANK_OUTPUT
-  digitalWrite(PPSPin, HIGH);
-  timerAlarmWrite(timer2, 50000, false);
-  timerRestart(timer2);
-  timerAlarmEnable(timer2);
-  #endif
-}
-
-// ************************************************************
-// Set the 1PPS pulse length
-// ************************************************************
-void triggerOnePulsePerSecLong() {
-  #ifndef COG_CRANK_OUTPUT
-  digitalWrite(PPSPin, HIGH);
-  timerAlarmWrite(timer2, 100000, false);
-  timerRestart(timer2);
-  timerAlarmEnable(timer2);
-  #endif
 }
 
 // ************************************************************
@@ -199,14 +110,6 @@ void startTimers() {
   // https://community.platformio.org/t/hardware-timer-issue-with-esp32/22047/10
   delayMicroseconds(0);
   timerAlarmEnable(timer1);
-
-  // 1PPS timer
-  timer2 = timerBegin(2, 80, true);
-  timerAttachInterrupt(timer2, &onTimer2, true);
-  // https://community.platformio.org/t/hardware-timer-issue-with-esp32/22047/10
-  timerAlarmWrite(timer2, 50000, false);
-  delayMicroseconds(0);
-  timerAlarmEnable(timer2);
 
   // Set default LED flash type
   setLedFlashType(1);

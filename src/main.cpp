@@ -14,22 +14,19 @@
 void setup() {
   // Show that we booted - useful for remote debugging
   pinMode(LED_PIN, OUTPUT);
+  pinMode(IND1Pin, OUTPUT);
+  pinMode(IND2Pin, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+
+  playTune();
+  
   for (int i = 0; i < 10 ; i++) {
-    digitalWrite(LED_PIN, (i % 2) == 0);   
-    delay(25);   
+    digitalWrite(LED_PIN, (i % 2) == 0);
+    digitalWrite(IND1Pin, (i % 2) == 0);   
+    digitalWrite(IND2Pin, (i % 2) == 0);   
+    delay(50);   
   }
 
-  // -------------------------------------------------------------------------
-  // for reliable startup with GPS connected on older versions of the SDK, you
-  // might need to change the uart initialisation. Older versions you have to 
-  // change line 200 of esp32-hal-uart.c from
-  //
-  //      uartFlush(uart);
-  //  to
-  //      uartFlushTxOnly(uart, false);
-  //
-  // Which causes the receive buffer NOT to be flushed
-  // This has been fixed in 6.5.0 
   Serial.begin(SERIAL_BAUD_RATE);
 
   #ifdef DEBUG
@@ -41,20 +38,12 @@ void setup() {
 
   debugMsgMain("Start up GPIOs");
   pinMode(CLKPin, OUTPUT);
-  pinMode(DATA1Pin, OUTPUT);
-  pinMode(LATCH1Pin, OUTPUT);
-  pinMode(DATA2Pin, OUTPUT);
-  pinMode(LATCH2Pin, OUTPUT);
-  pinMode(DATA3Pin, OUTPUT);
-  pinMode(LATCH3Pin, OUTPUT);
-
+  pinMode(DATAPin, OUTPUT);
+  pinMode(LATCHPin, OUTPUT);
   pinMode(BLANKPin, OUTPUT);
-  pinMode(PPSPin, OUTPUT);
-  digitalWrite(PPSPin, LOW);
-  
+
   pinMode(BTN1Pin, INPUT_PULLUP);
   pinMode(BTN2Pin, INPUT_PULLUP);
-  pinMode(BTN3Pin, INPUT_PULLUP);
 
   // -------------------------------------------------------------------------
 
@@ -93,6 +82,8 @@ void setup() {
   // Starts the display and the status LED flashing
   startTimers();
 
+//  startChirp();
+
   // -------------------------------------------------------------------------
   // First start digit test
   debugMsgMain("Startup digit test");
@@ -101,6 +92,8 @@ void setup() {
     outputManager.outputDisplay();
     delay(100);
   }
+
+//  stopChirp();
 
   // -------------------------------------------------------------------------
   

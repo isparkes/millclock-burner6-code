@@ -71,3 +71,5 @@ void resetAll();
 void enableWatchdog();
 void disableWatchdog();
 void feedWatchdog();
+
+void playTune();

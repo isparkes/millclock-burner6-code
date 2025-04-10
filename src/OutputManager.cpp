@@ -20,10 +20,6 @@ void OutputManager_::loadNumberArrayIntegerValue(unsigned int value) {
   valueBound = valueBound / 10;
   byte h10 = valueBound % 10;
 
-  numberArray[S1]  = convertToDigit(s1  % 10);
-  numberArray[S10] = convertToDigit(s10 % 10);
-  numberArray[M1]  = convertToDigit(m1  % 10);
-  numberArray[M10] = convertToDigit(m10 % 10);
   numberArray[H1]  = convertToDigit(h1  % 10);
   numberArray[H10] = convertToDigit(h10 % 10);
 
@@ -36,10 +32,6 @@ void OutputManager_::loadNumberArrayIntegerValue(unsigned int value) {
 // ************************************************************
 void OutputManager_::loadNumberArraySameValue(byte value) {
   byte val = value % 10;
-  numberArray[S1]  = convertToDigit(val);
-  numberArray[S10] = convertToDigit(val);
-  numberArray[M1]  = convertToDigit(val);
-  numberArray[M10] = convertToDigit(val);
   numberArray[H1]  = convertToDigit(val);
   numberArray[H10] = convertToDigit(val);
 
@@ -55,57 +47,17 @@ void OutputManager_::loadNumberArraySameValue(byte value) {
 // ************************************************************
 void OutputManager_::outputDisplay() {
   uint32_t tmpnextVal1 = decodeFromNumberArray(
-                                #ifdef NORMAL_DIGIT_OUTPUT
                                 numberArray[H10], 
                                 numberArray[H1],
                                 blanked,
                                 blanked,
-                                #endif
-                                #ifdef REVERSE_DIGIT_OUTPUT
-                                numberArray[S1], 
-                                numberArray[S10],
-                                blanked,
-                                blanked,
-                                #endif
                                 false,      // separators not used
                                 false);     // separators not used
-  uint32_t tmpnextVal2 = decodeFromNumberArray(
-                                #ifdef NORMAL_DIGIT_OUTPUT
-                                numberArray[M10], 
-                                numberArray[M1],
-                                blanked,
-                                blanked,
-                                #endif
-                                #ifdef REVERSE_DIGIT_OUTPUT
-                                numberArray[M1], 
-                                numberArray[M10],
-                                blanked,
-                                blanked,
-                                #endif
-                                false,      // separators not used
-                                false);     // separators not used
-  uint32_t tmpnextVal3 = decodeFromNumberArray(
-                                #ifdef NORMAL_DIGIT_OUTPUT
-                                numberArray[S10], 
-                                numberArray[S1],
-                                blanked,
-                                blanked,
-                                #endif
-                                #ifdef REVERSE_DIGIT_OUTPUT
-                                numberArray[H1], 
-                                numberArray[H10],
-                                blanked,
-                                blanked,
-                                #endif
-                                upOrDown,
-                                !counterManager.isCounterRunning());
 
   
   // move the values over, respect the MUTEX on the interrupt, otherwise we get visible glitches
   portENTER_CRITICAL_ISR(&timerMux1);
   val1 = tmpnextVal1;
-  val2 = tmpnextVal2;
-  val3 = tmpnextVal3;
   portEXIT_CRITICAL_ISR(&timerMux1);
 }
 

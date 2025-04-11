@@ -37,8 +37,8 @@
 #define TX0Pin    1
 
 // Indicator LEDs
-#define IND1Pin   12
-#define IND2Pin   13
+#define IND1Pin   26
+#define IND2Pin   27
 
 // Buttons
 #define BTN1Pin   15

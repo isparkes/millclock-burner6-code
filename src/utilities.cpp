@@ -60,8 +60,8 @@ void resetOptions() {
 
   cc->WiFiSSID = "";
   cc->WiFiPassword = "";
-  cc->repetitions = 10;
-  cc->counterValues = "1;1;1;1;1;1;1;1;1;1";
+  cc->repetitions = DEFAULT_REPETITIONS;
+  cc->counterValues = DEFAULT_COUNTER_VALUES;
 }
 
 // ************************************************************
@@ -199,6 +199,8 @@ void getConfigDataHandler(AsyncWebServerRequest *request) {
   root["WifiOnAtStart"] = cc->WifiOnAtStart;
   root["counterValues"] = counterManager.getCounterValues();
   root["repetitions"] = counterManager.getRepetitions();
+  root["tubeType"] = tube_type;
+  root["tubeBoardCount"] = cc->tubeBoardCount;
 
   root.printTo(*response);
   request->send(response);

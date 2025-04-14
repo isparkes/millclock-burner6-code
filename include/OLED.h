@@ -15,12 +15,9 @@
 #define WIFI_IND_X    5
 #define RUN_IND_X     12
 #define END_IND_X     19
-#define PIR_IND_X     26
-#define BLANK_IND_X   33
-#define Y_IND_X       40
-#define Z_IND_X       47
-#define TIME_IND_X    60
-#define AM_IND_X     111
+#define TUBE_IND_X    29
+#define VAL_IND_X     57
+#define REP_IND_X     100
 
 #define STATUS_BOX_X   0
 #define STATUS_BOX_Y  52
@@ -82,6 +79,9 @@ class OLED_
     void drawWiFiInd();
     void drawRunInd();
     void drawEndInd();
+    void drawTubeTypeInd();
+    void drawValueInd();
+    void drawRepetitionsInd();
 };
 
 extern OLED_ &oled;

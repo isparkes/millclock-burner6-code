@@ -9,8 +9,6 @@
 
 // -------------------------------------------------------------------------------
 
-#define DIGIT_COUNT 6
-
 #define WDT_TIMEOUT 5
 
 #define SERIAL_BAUD_RATE 115200
@@ -46,13 +44,6 @@
 
 // Sound
 #define BUZZER_PIN 25
-
-const int PWM_CHANNEL = 0;    // ESP32 has 16 channels which can generate 16 independent waveforms
-const int PWM_FREQ = 500;     // Recall that Arduino Uno is ~490 Hz. Official ESP32 example uses 5,000Hz
-const int PWM_RESOLUTION = 8; // We'll use same resolution as Uno (8 bits, 0-255) but ESP32 can go up to 16 bits 
-
-#define H1   0
-#define H10  1
 
 // ----------------------------------------------------------------
 

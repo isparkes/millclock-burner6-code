@@ -20,6 +20,9 @@ typedef struct {
   String counterValues;
   int repetitions;
 
+  int tubeType;
+  int tubeBoardCount;
+
   bool testMode;
   bool wasSetup;
 } spiffs_config_t;

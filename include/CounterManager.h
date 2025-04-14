@@ -7,8 +7,10 @@
 #include "Globals.h"
 #include "utilities.h"
 
-#define VALUES_PER_DIGIT        10
+#define VALUES_PER_DIGIT        11
 #define FIELD_COUNT_EXPECTED    VALUES_PER_DIGIT
+#define DEFAULT_COUNTER_VALUES  "60;60;60;60;60;60;60;60;60;60;60;"
+#define DEFAULT_REPETITIONS     1
 
 // ----------------------------------------------------------------------------------------------------
 // ------------------------------------- SPIFFS Clock Component ---------------------------------------
@@ -29,6 +31,7 @@ class CounterManager_
     void setCounterValues(String counterArray);
     String getCounterValues();
     String getCounterValuesCurrent();
+    unsigned int getSecondsRemainingCurrentValue();
 
     int getRepetitions();
     void setRepetitions(int inputRepetitions);
@@ -40,13 +43,19 @@ class CounterManager_
     void counterCount();
     bool isCounterRunning();
     bool isCounterExpired();
+    bool isCounterExpiredConfirmed();
+    void confirmCounterExpired();
     unsigned int getCurrentCounterVal();
+    String getCurrentCounterValString();
+    void toggleCounterRunning();
   private:
     void copyInitialArrayToCurrent();
     void copyInitialRepetitionsToCurrent();
+    void loadDefaultValues();
     String _counterValues = "";
     bool _counterRunning = false;
     bool _counterDone = false;
+    bool _counterDoneConfirmed = false;
     byte _digitInitialValues[VALUES_PER_DIGIT];
     byte _digitCurrentValues[VALUES_PER_DIGIT];
     int  _repetitionsInitial = 0;

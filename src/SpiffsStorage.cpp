@@ -76,6 +76,12 @@ bool SpiffsStorage_::getConfigFromSpiffs()
         cc->repetitions = json["repetitions"];
         debugMsgSpfX("Loaded repetitions: " + String(cc->repetitions));
 
+        cc->tubeType = json["tubeType"];
+        debugMsgSpfX("Loaded tubeType: " + String(cc->tubeType));
+
+        cc->tubeBoardCount = json["tubeBoardCount"];
+        debugMsgSpfX("Loaded tubeBoardCount: " + String(cc->tubeBoardCount));
+
         loaded = true;
       }
       else
@@ -109,6 +115,8 @@ void SpiffsStorage_::saveConfigToSpiffs()
   json["WifiOnAtStart"] = cc->WifiOnAtStart;
   json["counterValues"] = cc->counterValues;
   json["repetitions"] = cc->repetitions;
+  json["tubeType"] = cc->tubeType;
+  json["tubeBoardCount"] = cc->tubeBoardCount;
   
   File configFile = SPIFFS.open("/config/config.json", "w");
   if (!configFile)

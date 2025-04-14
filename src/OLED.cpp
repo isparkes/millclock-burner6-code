@@ -77,10 +77,14 @@ void OLED_::showScrollingMessage(String messageText)
 
 void OLED_::showStatusLine()
 {
+  _display->fillRect(STATUS_BOX_X, STATUS_BOX_Y, STATUS_BOX_W, STATUS_BOX_H, BLACK);
   _display->drawRect(STATUS_BOX_X, STATUS_BOX_Y, STATUS_BOX_W, STATUS_BOX_H, WHITE);
   drawWiFiInd();
   drawRunInd();
   drawEndInd();
+  drawTubeTypeInd();
+  drawValueInd();
+  drawRepetitionsInd();
   _display->display();
 }
 
@@ -114,6 +118,25 @@ void OLED_::drawEndInd() {
   } else {
     _display->print("-");
   }
+}
+
+void OLED_::drawTubeTypeInd() {
+  _display->setCursor(TUBE_IND_X,STATUS_LINE_Y);
+  if (tube_type == ZIN70) {
+    _display->print("T:70");
+  } else {
+    _display->print("T:18");
+  }
+}
+
+void OLED_::drawValueInd() {
+  _display->setCursor(VAL_IND_X,STATUS_LINE_Y);
+  _display->print("V:" + counterManager.getCurrentCounterValString() + ":" + String(counterManager.getSecondsRemainingCurrentValue()));
+}
+
+void OLED_::drawRepetitionsInd() {
+  _display->setCursor(REP_IND_X,STATUS_LINE_Y);
+  _display->print("R:" + String(counterManager.getRepetitionsCurrent()));
 }
 
 void OLED_::showMenuHeading(String menuText) {

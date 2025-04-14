@@ -17,10 +17,23 @@ void CounterManager_::copyInitialArrayToCurrent() {
 }
 
 // ************************************************************
-// 
+// Reset the current repetition values to the initial values
 // ************************************************************
 void CounterManager_::copyInitialRepetitionsToCurrent() {
   _repetitionsCurrent = _repetitionsInitial;
+}
+
+// ************************************************************
+// Load the default values
+// This is used when the values are not set or are invalid
+// ************************************************************
+void CounterManager_::loadDefaultValues() {
+  debugMsgCmg("Loading default values");
+  _counterValues = DEFAULT_COUNTER_VALUES;
+  _repetitionsInitial = DEFAULT_REPETITIONS;
+  for (int digit = 0 ; digit < VALUES_PER_DIGIT ; digit++) {
+    _digitInitialValues[digit] = 0;
+  }
 }
 
 // ************************************************************
@@ -30,7 +43,10 @@ void CounterManager_::setCounterValues(String inputString) {
   _counterValues = inputString;
   int fieldCountFound = getValueCount(_counterValues, ';');
   if (fieldCountFound != FIELD_COUNT_EXPECTED) {
-    debugMsgCmg("Wrong number of fields. Got (" + inputString + ")");
+    debugMsgCmg("Wrong number of fields. Got " + String(fieldCountFound) + " fields from, inputString (" + inputString + "), but was expecting " + String(FIELD_COUNT_EXPECTED) + ". Loading default values: (" + String(DEFAULT_COUNTER_VALUES) + ")");
+    _counterValues = DEFAULT_COUNTER_VALUES;
+    loadDefaultValues();
+    spiffsStorage.saveConfigToSpiffs();
   } else {
     int index = 0;
 
@@ -49,10 +65,10 @@ void CounterManager_::setCounterValues(String inputString) {
     index++;
     debugMsgCmg("Repetitions: " + String(_repetitionsInitial));
     _counterRunning = false;
-
-    copyInitialArrayToCurrent();
-    copyInitialRepetitionsToCurrent();
   }
+
+  copyInitialArrayToCurrent();
+  copyInitialRepetitionsToCurrent();
 }
 
 // ************************************************************
@@ -112,6 +128,7 @@ void CounterManager_::resetCounter() {
   copyInitialRepetitionsToCurrent();
   _counterRunning = true;
   _counterDone = false;
+  _counterDoneConfirmed = false;
 }
 
 // ************************************************************
@@ -133,17 +150,16 @@ void CounterManager_::counterCount() {
     return;
   }
 
-  unsigned int outputValue = 0;
   int valueIndex = 0;
   int foundValue = 0;
 
   // Fast forward to the current one we are working on
-  while ((valueIndex < 10) && (_digitCurrentValues[valueIndex] == 0)) {
+  while ((valueIndex < VALUES_PER_DIGIT) && (_digitCurrentValues[valueIndex] == 0)) {
     valueIndex++;
   }
 
   // did we run off the end?
-  if(valueIndex == 10) {
+  if(valueIndex == VALUES_PER_DIGIT) {
     if (_repetitionsCurrent > 1) {
       _repetitionsCurrent--;
       debugMsgCmg("New repetition: Remaining: " + String(_repetitionsCurrent) + " of " + String(_repetitionsInitial));
@@ -166,34 +182,77 @@ void CounterManager_::counterCount() {
   debugMsgCmg("Value of digit " + String(valueIndex) + " = " + String(foundValue) + " (" + String(_digitCurrentValues[valueIndex]) + ")");
   #endif
 
-  for (int digit = 0 ; digit < DIGIT_COUNT ; digit++) {
-    outputValue = outputValue * 10 + foundValue;
-  }
-
-  _currentCount = outputValue;
+  _currentCount = foundValue;
 }
 
 // ************************************************************
-// 
+// Is the counter running or stopped?
 // ************************************************************
 bool CounterManager_::isCounterRunning() {
   return _counterRunning;
 }
 
 // ************************************************************
-// 
+// Is the counter expired?
 // ************************************************************
 bool CounterManager_::isCounterExpired() {
-  return _counterDone;
+  return _counterDone && !_counterDoneConfirmed;
 }
 
 // ************************************************************
-// 
+// Is the counter expired?
+// ************************************************************
+bool CounterManager_::isCounterExpiredConfirmed() {
+  return _counterDoneConfirmed;
+}
+
+// ************************************************************
+// Confirm a counter expired event
+// ************************************************************
+void CounterManager_::confirmCounterExpired() {
+  _counterDoneConfirmed = true;
+}
+
+// ************************************************************
+// Get the current counter value
 // ************************************************************
 unsigned int CounterManager_::getCurrentCounterVal() {
   return _currentCount;
 }
 
+// ************************************************************
+// Get the seconds remaining on the current counter value
+// ************************************************************
+unsigned int CounterManager_::getSecondsRemainingCurrentValue() {
+  unsigned int returnVal = 0;
+  returnVal = _digitCurrentValues[_currentCount];
+  return returnVal;
+}
+
+// ************************************************************
+// Get value of the digit we are showing
+// ************************************************************
+String CounterManager_::getCurrentCounterValString() {
+  String returnVal = "";
+  if (getCurrentCounterVal() < 10) {
+    returnVal = String(getCurrentCounterVal());
+  } else {
+    returnVal = "M";
+  }
+  return returnVal;
+}
+
+// ************************************************************
+// Button press toggle of running status
+// ************************************************************
+void CounterManager_::toggleCounterRunning() {
+  _counterRunning = !_counterRunning;
+  if (_counterRunning) {
+    startCounter();
+  } else {
+    stopCounter();
+  }
+}
 
 // ************************************************************
 // Internal plumbing

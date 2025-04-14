@@ -17,11 +17,10 @@ spiffs_stats_t* cs = &current_stats;
 // ************************************************************
 // Display values
 // ************************************************************
-volatile uint32_t val1 = 0;
-volatile uint32_t val2 = 0;
-volatile uint32_t val3 = 0;
+tube_type_t tube_type = ZIN70;
 
-volatile uint16_t impressions;
+volatile uint32_t dispVal = 0; // precomputed bit array for 2 digits
+volatile uint8_t dispBoardCount = 3; // The number of display boards
 
 // Makes sure we are not writing to the display buffer
 // when the interrupt is reading it
@@ -31,7 +30,7 @@ portMUX_TYPE timerMux1 = portMUX_INITIALIZER_UNLOCKED;
 portMUX_TYPE encoderMux = portMUX_INITIALIZER_UNLOCKED;
 
 // ************************************************************
-// Variables for clock management
+// General values
 // ************************************************************
 unsigned long nowMillis = 0;
 unsigned long previousMillisWiFi = 0;
@@ -55,6 +54,11 @@ String uniqHostname;
 AsyncWebServer server(80);
 
 String lastWiFiScan = "";
+
+unsigned long btn1ReadMillis = 0;
+unsigned long btn2ReadMillis = 0;
+
+bool lastExpired = false;
 
 // ------------------ Global functions -----------------
 

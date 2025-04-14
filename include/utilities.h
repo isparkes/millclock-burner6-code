@@ -24,11 +24,13 @@
 
 // -------------------------------------------------------------------------------
 
-const uint32_t DECODE_DIGIT[] = { 0x0200, 0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0020, 0x0040, 0x0080, 0x0100};
+const uint32_t DECODE_DIGIT_ZIN70[] = { 0x0200, 0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0020, 0x0040, 0x0080, 0x0100, 0x0400};
+
+const uint32_t DECODE_DIGIT_ZIN18[] = { 0x0200, 0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0020, 0x0040, 0x0080, 0x0100, 0x0000};
 
 // Formatting routines
 String timeToReadableStringFromTm(tm timeToFormat);
-uint32_t decodeBCD(byte valueToDecode, bool bl1, bool bl2, bool led1, bool led2);
+uint32_t decodeBCD(byte valueToDecode);
 
 String getValueAtIndex(String data, char separator, int index);
 int getValueCount(String data, char separator);

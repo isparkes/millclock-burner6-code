@@ -6,8 +6,8 @@
 #include "esp_wps.h"
 
 #include "SpiffsStorage.h"          // Access to config objects
-
 #include "StorageTypes.h"           // Config and Stats objects
+#include "TubeTypes.h"              // Tube types
 
 // ************************************************************
 // Global shared components and objects
@@ -34,15 +34,17 @@ extern spiffs_stats_t* cs;
 // ************************************************************
 // Display values
 // ************************************************************
-extern volatile uint32_t val1;
-extern volatile uint32_t val2;
-extern volatile uint32_t val3;
+extern volatile uint32_t dispVal;
+extern volatile uint8_t dispBoardCount;
 
-extern volatile uint16_t impressions;
+extern tube_type_t tube_type;
 
 extern portMUX_TYPE timerMux1;
 extern portMUX_TYPE encoderMux;
 
+// ************************************************************
+// General values
+// ************************************************************
 extern bool doAutoReconnect;
 
 extern bool encoderToggle;
@@ -52,6 +54,11 @@ extern String uniqHostname;
 extern AsyncWebServer server;
 
 extern String lastWiFiScan;
+
+extern unsigned long btn1ReadMillis;
+extern unsigned long btn2ReadMillis;
+
+extern bool lastExpired;
 
 // ------------------ Global functions -----------------
 

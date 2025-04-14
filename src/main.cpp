@@ -11,6 +11,23 @@
 #include "MenuManager.h"
 #endif
 
+// ************************************************************
+// Switch changed - mark that there is an event waiting
+// ************************************************************
+void IRAM_ATTR btn1ISR() {
+  btn1ReadMillis = millis() + 50;
+}
+
+// ************************************************************
+// Switch changed - mark that there is an event waiting
+// ************************************************************
+void IRAM_ATTR btn2ISR() {
+  btn2ReadMillis = millis() + 50;
+}
+
+// ************************************************************
+// Sset up the unit
+// ************************************************************
 void setup() {
   // Show that we booted - useful for remote debugging
   pinMode(LED_PIN, OUTPUT);
@@ -44,6 +61,10 @@ void setup() {
 
   pinMode(BTN1Pin, INPUT_PULLUP);
   pinMode(BTN2Pin, INPUT_PULLUP);
+
+  // Hook up the switches to the trigger handler
+  attachInterrupt(BTN1Pin, btn1ISR, CHANGE);
+  attachInterrupt(BTN2Pin, btn2ISR, CHANGE);
 
   // -------------------------------------------------------------------------
 
@@ -87,13 +108,21 @@ void setup() {
   // -------------------------------------------------------------------------
   // First start digit test
   debugMsgMain("Startup digit test");
-  for (int i = 0 ; i <= 20 ; i++) {
-    outputManager.loadNumberArraySameValue(i%10);
+  outputManager.setBlanked(false);
+
+  for (int i = 0 ; i <= 2*MAX_CATHODE_COUNT ; i++) {
+    outputManager.loadNumberIntegerValue(i);
     outputManager.outputDisplay();
     delay(100);
   }
 
-//  stopChirp();
+  // // -------------------------------------------------------------------------
+  // // First start bit test
+  // debugMsgMain("Startup bit test");
+  // for (int i = 0 ; i < 32 ; i++) {
+  //   dispVal = (1 << i);
+  //   delay(100);
+  // }
 
   // -------------------------------------------------------------------------
   
@@ -156,7 +185,32 @@ void setup() {
   counterManager.setCounterValues(cc->counterValues);
   counterManager.setRepetitions(cc->repetitions);
 
+  if (cc->tubeType == ZIN70) {
+    tube_type = ZIN70;
+  } else {
+    tube_type = ZIN18;
+  }
+
+  debugMsgMain("Got board count: " + String(cc->tubeBoardCount));
+
   counterManager.startCounter();
+
+  // -------------------------------------------------------------------------
+
+  debugMsgMain("Setup complete");
+  delay(1000);
+  digitalWrite(LED_PIN, LOW);
+  digitalWrite(IND1Pin, LOW);
+  digitalWrite(IND2Pin, LOW);
+  delay(1000);
+  digitalWrite(LED_PIN, HIGH);
+  digitalWrite(IND1Pin, HIGH);
+  digitalWrite(IND2Pin, HIGH);
+
+  // -------------------------------------------------------------------------
+  
+  // Set the initial state of the display
+  outputManager.setBlanked(false);
 }
 
 // ************************************************************
@@ -187,9 +241,23 @@ void performOncePerSecondProcessing() {
   // -------------------------------------------------------------------------------
   
   counterManager.counterCount();
-  outputManager.loadNumberArrayIntegerValue(counterManager.getCurrentCounterVal());
+  outputManager.loadNumberIntegerValue(counterManager.getCurrentCounterVal());
+//  debugMsgMain("Counter value from manager: " + String(counterManager.getCurrentCounterVal()));
   outputManager.updateOncePerSecond();
-  blanked = counterManager.isCounterExpired();
+
+  // Turn off tubes at the end of the run
+  blanked = counterManager.isCounterExpired() || counterManager.isCounterExpiredConfirmed();
+
+  bool ind1Value = false;
+  if (counterManager.isCounterExpired()) {
+    ind1Value = (secsDelta % 500) > 250;
+  } else {
+    ind1Value = counterManager.isCounterRunning();
+  }
+
+  // These are inverted because the display is active low
+  digitalWrite(IND1Pin, !ind1Value);
+  digitalWrite(IND2Pin, !tube_type == ZIN70);
 
   // -------------------------------------------------------------------------------
   
@@ -208,21 +276,22 @@ void performOncePerSecondProcessing() {
   #endif
   
   // -------------------------------------------------------------------------------
+
+  if (lastExpired != counterManager.isCounterExpired()) {
+    if (lastExpired == false && counterManager.isCounterExpired() == true) {
+      debugMsgMain("Counter has just expired!");
+      playTune();
+    }
+  }
+  lastExpired = counterManager.isCounterExpired();
+
+  // -------------------------------------------------------------------------------
   
   debugManager.debugAutoOffCheck();
 
   // -------------------------------------------------------------------------------
 
   feedWatchdog();
-}
-
-// ************************************************************
-// called to process switch changes. An interrupt sets a 
-// trigger and the mail loop calls this to process the 
-// waiting changes
-// ************************************************************
-void handleSwitchChange(byte mode, bool state) {
-  // Nothing
 }
 
 // ************************************************************
@@ -238,6 +307,7 @@ void performOncePerMinuteProcessing() {
   } else {
     if (counterManager.isCounterExpired()) {
       debugMsgMain("Counter Expired!");
+      playTune();
     } else {
       debugMsgMain("Counter Stopped!");
     }
@@ -307,6 +377,26 @@ void loop()
     secsDelta = secsDeltaAbs;
   } else {
     secsDelta = 1000 - secsDeltaAbs;
+  }
+
+  // Read and debounce buttons 
+  if (btn1ReadMillis > nowMillis) {
+    if (digitalRead(BTN1Pin) == LOW) {
+      btn1ReadMillis = 0;
+//      debugMsgMain("Button 1 pressed");
+      if (counterManager.isCounterExpired()) {
+        counterManager.confirmCounterExpired();
+      } else {
+        counterManager.toggleCounterRunning();
+      }
+    }
+  }
+  if (btn2ReadMillis > nowMillis) {
+    if (digitalRead(BTN2Pin) == LOW) {
+      btn2ReadMillis = 0;
+//      debugMsgMain("Button 2 pressed");
+      counterManager.resetCounter();
+    }
   }
 
   delay(10);

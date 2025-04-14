@@ -1,76 +1,64 @@
 #include "OutputManager.h"
 
 // ************************************************************
-// Break the time into displayable digits
+// Load the digit to display into the internal buffer
 // ************************************************************
-void OutputManager_::loadNumberArrayIntegerValue(unsigned int value) {
-  unsigned int valueBound = value;
-  if (valueBound > 999999)
-    valueBound = 999999;
-  
-  byte s1 = valueBound % 10;
-  valueBound = valueBound / 10;
-  byte s10 = valueBound % 10;
-  valueBound = valueBound / 10;
-  byte m1 = valueBound % 10;
-  valueBound = valueBound / 10;
-  byte m10 = valueBound % 10;
-  valueBound = valueBound / 10;
-  byte h1 = valueBound % 10;
-  valueBound = valueBound / 10;
-  byte h10 = valueBound % 10;
+void OutputManager_::loadNumberIntegerValue(unsigned int newValue) {
+  if (tube_type == ZIN70) {
+    decodedValue = decodeFromNumberArray(newValue  % CATHODE_COUNT_ZIN70);
+  } else if (tube_type == ZIN18) {
+    decodedValue = decodeFromNumberArray(newValue  % CATHODE_COUNT_ZIN18);
+  }
 
-  numberArray[H1]  = convertToDigit(h1  % 10);
-  numberArray[H10] = convertToDigit(h10 % 10);
+  #ifdef OTM_EXTENDED_DEBUG
+  debugMsgOtm("Received value: " + String(newValue));
+  #endif
 
   // Update buffers
   outputDisplay();
 }
 
 // ************************************************************
-// Break the time into displayable digits
-// ************************************************************
-void OutputManager_::loadNumberArraySameValue(byte value) {
-  byte val = value % 10;
-  numberArray[H1]  = convertToDigit(val);
-  numberArray[H10] = convertToDigit(val);
-
-  // Update buffers
-  outputDisplay();
-}
-
-// ************************************************************
-// Do a single complete display, including any fading and
-// dimming requested. Prepares the display variables for
+// Do a single complete display. Prepares the display variables for
 // the interrupt driven display output.
-// This is the heart of the display processing!
 // ************************************************************
 void OutputManager_::outputDisplay() {
-  uint32_t tmpnextVal1 = decodeFromNumberArray(
-                                numberArray[H10], 
-                                numberArray[H1],
-                                blanked,
-                                blanked,
-                                false,      // separators not used
-                                false);     // separators not used
-
-  
   // move the values over, respect the MUTEX on the interrupt, otherwise we get visible glitches
   portENTER_CRITICAL_ISR(&timerMux1);
-  val1 = tmpnextVal1;
+  dispVal = decodedValue;
+  dispBoardCount = cc->tubeBoardCount;
   portEXIT_CRITICAL_ISR(&timerMux1);
 }
 
 // ************************************************************
-// Turn a display pair into a uint24 ready for output
+// Turn a display pair into a uint32 ready for output.
+// Ayways prepare the entire width of TWO digits, even though we
+// might only use 1 digit.
 // ************************************************************
-uint32_t OutputManager_::decodeFromNumberArray(byte valueToDecodeTens, byte valueToDecodeUnits, bool blankTens, bool blankUnits, bool led1, bool led2) {
-  uint32_t decoded = 0;
-  if (!blankTens) decoded = DECODE_DIGIT[valueToDecodeTens];
-  if (!blankUnits) decoded = decoded | DECODE_DIGIT[valueToDecodeUnits] << 10;
-  if (led1) decoded |= DECODE_LED[0];
-  if (led2) decoded |= DECODE_LED[1];
-  return decoded;
+uint32_t OutputManager_::decodeFromNumberArray(byte valueToDecode) {
+  uint32_t decodedTwoDigits = 0;
+  uint32_t decodedOneDigit = 0;
+
+  // for the case that our 595s don't have and output enable pin
+  if (!blanked) {
+    if (tube_type == ZIN70) {
+      decodedOneDigit = DECODE_DIGIT_ZIN70[valueToDecode];    
+    } else if (tube_type == ZIN18) {
+      decodedOneDigit = DECODE_DIGIT_ZIN18[valueToDecode];
+    }
+  }
+
+  #ifdef OTM_EXTENDED_DEBUG
+  debugMsgOtm("Decoded one value: " + String(decodedOneDigit));
+  #endif
+
+  decodedTwoDigits = decodedOneDigit << 11 | decodedOneDigit;
+
+  #ifdef OTM_EXTENDED_DEBUG
+  debugMsgOtm("Decoded two values: " + String(decodedTwoDigits));
+  #endif
+
+  return decodedTwoDigits;
 }
 
 // ************************************************************
@@ -78,36 +66,50 @@ uint32_t OutputManager_::decodeFromNumberArray(byte valueToDecodeTens, byte valu
 // ************************************************************
 void OutputManager_::updateOncePerSecond() {
 #ifdef OTM_EXTENDED_DEBUG
-dumpNumberArrayValues();
+dumpDecodedBitmap();
 #endif
-
 }
 
 // ************************************************************
-// Safety function: Convert given value to a valid digit value
+// For 595ds where the output enable pin works as a blanking pin
 // ************************************************************
-clock_digit OutputManager_::convertToDigit(int value) {
-  if (value < 0) {
-    debugMsgOtm("Underrange error converting digit");
-    debugMsgOtm("Got: " + String(value));
-    return digit0;
+void OutputManager_::setBlanked(bool blank) {
+  if (blank) {
+    digitalWrite(BLANKPin, LOW);
+  } else {
+    digitalWrite(BLANKPin, HIGH);
   }
-  if (value > 9) {
-    debugMsgOtm("Overrange error converting digit");
-    debugMsgOtm("Got: " + String(value));
-    return digit9;
+  blanked = blank;
+  if (blanked) {
+    debugMsgOtm("Display blanked");
+  } else {
+    debugMsgOtm("Display unblanked");
   }
-  return (clock_digit) value;
 }
 
 #ifdef OTM_EXTENDED_DEBUG
-void OutputManager_::dumpNumberArrayValues() {
-  String val = "Number Array: " + 
-    String(numberArray[0]) + String(numberArray[1]) + ":" + 
-    String(numberArray[2]) + String(numberArray[3]) + ":" +
-    String(numberArray[4]) + String(numberArray[5]);
+void OutputManager_::dumpDecodedBitmap() {
+  String val = "Number Array: ";
+  for (int i = 0; i < 24; i++) {
+    if (dispVal & (1 << (i))) {
+      val = val + "1";
+    } else {
+      val = val + "0";  
+    }
+    if (i == 10) {
+      val = val + " ";
+    }
+    if (i == 21) {
+      val = val + " ";
+    }
+  }
+  if (blanked) {
+    val = val + " (BLANKED)";
+  } else {
+    val = val + " (UNBLANKED)";
+  }
+  val = val + " Board Count: " + String(dispBoardCount);
   debugMsgOtm(val);
-
 }
 #endif
 

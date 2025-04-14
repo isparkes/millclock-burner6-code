@@ -16,12 +16,8 @@ volatile int count0Off = COUNT0_OFF;
 // These variables hold the impression data
 extern volatile uint32_t val1;
 
-// These are for debugging
-extern volatile uint16_t impressions;
-
-volatile uint32_t _val1curr = 1;
-
-volatile uint32_t _val1 = 0;
+volatile uint32_t _dispVal = 0;
+volatile uint8_t _dispBoardCount = 3;
 
 // ************************************************************
 // ISR for LED flash update
@@ -39,54 +35,53 @@ void IRAM_ATTR onTimer0() {
 }
 
 // ************************************************************
-// Perform the parallel shift out to the registers
+// Perform the parallel shift out to the registers. Always
+// output both digits of a tube board.
 // ************************************************************
-void IRAM_ATTR shiftOut24H(uint32_t _val1) {
+void IRAM_ATTR shiftOutDigits() {
   uint8_t i;
+  uint8_t j;
 
-  for (i = 0; i < 24; i++) {
-    digitalWrite(DATAPin, !!(_val1 & (1 << (23 - i))));
-    digitalWrite(CLKPin, HIGH);
-    digitalWrite(CLKPin, HIGH);
-    digitalWrite(CLKPin, LOW);
-    digitalWrite(CLKPin, LOW);
+  // output dispcount copies of dispval
+  for(j = 0; j < 3; j++) {
+    for (i = 0; i < 24; i++) {
+      digitalWrite(DATAPin, !!(_dispVal & (1 << (23 - i))));
+      digitalWrite(CLKPin, HIGH);
+      digitalWrite(CLKPin, LOW);
+    }
+    // Latch it in
+    digitalWrite(LATCHPin, HIGH);
+    digitalWrite(LATCHPin, LOW);
   }
-  digitalWrite(LATCHPin, HIGH);
-  digitalWrite(LATCHPin, HIGH);
-  digitalWrite(LATCHPin, LOW);
-  digitalWrite(LATCHPin, LOW);
 }
 
 // ************************************************************
 // ISR for display update.
-// Each display impression is made up of 20 phase steps. When
-// cross-fading from one digit to another, we switch the display
-// one one of the 20 steps ("switch time"). The fade is done by
-// pregressively changing the switchTime value.
+// This is called every 500uS. It will load the new values
+// from the outputManager and shift them out to the display
+// registers. The display is updated every 500uS, but the
+// display is only updated if the value has changed.
 //
-// Additionally we only outout to the shift register (3 8 bit
-// shift registers for each digit pair = 24 bits) if we detect
-// the value has changed.
+// We output 3 8-bit shift registers for each digit 
+// pair = 24 bits, but only 22 bits are used.
 //
 // We also have an interlock between writing the data into the
-// registers (val1,2,3, nextVal1,2,3, switchTime) using the
+// registers (dispVal, dispBoardCount) using the
 // timerMux1 mutex. If we don't have this, the display will
 // glitch due to the values changing while displaying).
+//
 // This is double-buffering: The values are calculated into
 // temporary variables in OutputManager_::outputDisplay, then
 // loaded into the local volatile variables ONCE PER IMPRESSION.
 // ************************************************************
 void IRAM_ATTR onTimer1() {
   portENTER_CRITICAL_ISR(&timerMux1);
-  impressions++;
 
   // Load the new values from the output of the outputManager
-  _val1 = val1;
+  _dispVal = dispVal;
+  _dispBoardCount = dispBoardCount;
 
-  if (_val1 != _val1curr) {
-    shiftOut24H(_val1);
-    _val1curr = _val1;
-  } 
+  shiftOutDigits();
 
   portEXIT_CRITICAL_ISR(&timerMux1);
 }

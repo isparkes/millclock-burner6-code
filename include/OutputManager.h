@@ -14,10 +14,6 @@
 
 // -------------------------------------------------------------------------------
 
-const uint32_t DECODE_LED[]          = { 0x800000, 0x400000};
-
-// -------------------------------------------------------------------------------
-
 // The mode selection works on a priority scheme
 // The lower priority mode will be diplayed if enabled
 // ACP and Diags mode override all other modes
@@ -31,18 +27,9 @@ const uint32_t DECODE_LED[]          = { 0x800000, 0x400000};
 
 typedef void (*DebugCallback) (String);
 
-typedef enum {
-    digit0 = 0,
-    digit1 = 1,
-    digit2 = 2,
-    digit3 = 3,
-    digit4 = 4,
-    digit5 = 5,
-    digit6 = 6,
-    digit7 = 7,
-    digit8 = 8,
-    digit9 = 9
-} clock_digit;
+#define MAX_CATHODE_COUNT 11
+#define CATHODE_COUNT_ZIN70 11
+#define CATHODE_COUNT_ZIN18 10
 
 class OutputManager_ {
   private:
@@ -58,23 +45,18 @@ class OutputManager_ {
     // Do a display impression
     void outputDisplay();
 
-    void loadNumberArraySameValue(byte value);
-    void loadNumberArrayIntegerValue(unsigned int value);
+    void loadNumberIntegerValue(unsigned int value);
+
+    void setBlanked(bool blank);
 
     void updateOncePerSecond();
-
-    void setArbitraryValue(unsigned int value);
-    void setArbitraryValueDisplayTime(unsigned int value);
-
-    byte getCurrentDisplayDigitValue(byte digit);
-
   private:
-    clock_digit numberArray[DIGIT_COUNT]     = {digit0, digit0, digit0, digit0, digit0, digit0};
+    uint32_t decodedValue;
 
-    clock_digit convertToDigit(int value);
-    void dumpNumberArrayValues();
-
-    uint32_t decodeFromNumberArray(byte valueToDecodeTens, byte valueToDecodeUnits, bool blankTens, bool bankUnits, bool led1, bool led2);
+    uint32_t decodeFromNumberArray(byte valueToDecode);
+    #ifdef OTM_EXTENDED_DEBUG
+    void dumpDecodedBitmap();
+    #endif
 };
 
 extern OutputManager_ &outputManager;

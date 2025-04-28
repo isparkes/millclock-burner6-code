@@ -43,7 +43,7 @@ void IRAM_ATTR shiftOutDigits() {
   uint8_t j;
 
   // output dispcount copies of dispval
-  for(j = 0; j < 3; j++) {
+  for(j = 0; j < _dispBoardCount; j++) {
     for (i = 0; i < 24; i++) {
       digitalWrite(DATAPin, !!(_dispVal & (1 << (23 - i))));
       digitalWrite(CLKPin, HIGH);

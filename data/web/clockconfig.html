@@ -139,7 +139,7 @@
                 <h3 class="sub-header">Tube Board Count</h3>
                 <div class="form-horizontal">
                         <div class="form-group">
-                    <label class="control-label col-xs-3" for="repetitions">Tube Board Count:</label>
+                    <label class="control-label col-xs-3" for="tubeboardcount">Tube Board Count:</label>
                     <div class="col-xs-2">
                         <input type="number" class="form-control" name="tubeboardcount" id="tubeboardcount" min="1" max="99" value="3">
                     </div>
@@ -218,6 +218,7 @@
 
         postBody["counterValues"] = $("#counterValues").val();
         postBody["repetitions"] = $("#repetitions").val();
+        postBody["tubeBoardCount"] = $("#tubeboardcount").val();
 
         // ----------------------------------
 

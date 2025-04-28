@@ -296,6 +296,7 @@ void postConfigDataHandler(AsyncWebServerRequest *request) {
     compareAndUpdateBool  (json, "WifiOnAtStart",&cc->WifiOnAtStart);
     compareAndUpdateInt   (json, "repetitions",&cc->repetitions);
     compareAndUpdateString(json, "counterValues",&cc->counterValues);
+    compareAndUpdateInt   (json, "tubeBoardCount",&cc->tubeBoardCount);
 
     if (!counterManager.getCounterValues().equals(cc->counterValues)) {
       counterManager.setCounterValues(cc->counterValues);

@@ -9,6 +9,8 @@ void MenuManager_::mainMenu() {
   byte menuCount = 1;
   menuMode = menu;
   oledMenu.menuTitle = "Main Menu";
+  String tubeType = cc->tubeType == ZIN18 ? "ZIN18" : "ZIN70";
+  oledMenu.menuItems[menuCount] = "Tube " + tubeType;oledMenu.menuActions[menuCount++] = toggleTubeType;
   oledMenu.menuItems[menuCount] = "Wifi";            oledMenu.menuActions[menuCount++] = gotoWifiMenu;
   oledMenu.menuItems[menuCount] = "System";          oledMenu.menuActions[menuCount++] = gotoOptionsMenu;
   oledMenu.menuItems[menuCount] = "Menu Off";        oledMenu.menuActions[menuCount++] = menuOff;
@@ -112,6 +114,25 @@ void MenuManager_::menuActions(menuTargets selectedAction) {
     }
     case menuOff: {
       resetMenu();
+      break;
+    }
+
+    // --------------------------------------------------
+    // "Main Menu Items"
+    case toggleTubeType: {
+      switch (cc->tubeType) {
+        case ZIN70: {
+          cc->tubeType = ZIN18;
+          counterManager.setTubeType(ZIN18);
+          break;
+        }
+        case ZIN18: {
+          cc->tubeType = ZIN70;
+          counterManager.setTubeType(ZIN70);
+          break;
+        }
+      }
+      mainMenu();
       break;
     }
 
@@ -600,13 +621,13 @@ void MenuManager_::serviceValue() {
 //            createList("demo_list", 6, &tList[0]);
 
 void MenuManager_::createList(String _title, int _noOfElements, String *_list) {
-  resetMenu();                      // clear any previous menu
-  menuMode = menu;                  // enable menu mode
-  oledMenu.noOfmenuItems = _noOfElements;    // set the number of items in this menu
-  oledMenu.menuTitle = _title;               // menus title (used to identify it)
+  resetMenu();                                // clear any previous menu
+  menuMode = menu;                            // enable menu mode
+  oledMenu.noOfmenuItems = _noOfElements;     // set the number of items in this menu
+  oledMenu.menuTitle = _title;                // menus title (used to identify it)
 
   for (int i=1; i <= _noOfElements; i++) {
-    oledMenu.menuItems[i] = _list[i-1];        // set the menu items
+    oledMenu.menuItems[i] = _list[i-1];       // set the menu items
   }
 }
 

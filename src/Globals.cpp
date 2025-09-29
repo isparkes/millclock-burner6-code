@@ -17,8 +17,6 @@ spiffs_stats_t* cs = &current_stats;
 // ************************************************************
 // Display values
 // ************************************************************
-tube_type_t tube_type = ZIN70;
-
 volatile uint32_t dispVal = 0; // precomputed bit array for 2 digits
 volatile uint8_t dispBoardCount = 3; // The number of display boards
 

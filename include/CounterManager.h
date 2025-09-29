@@ -7,14 +7,25 @@
 #include "Globals.h"
 #include "utilities.h"
 
-#define VALUES_PER_DIGIT        11
-#define FIELD_COUNT_EXPECTED    VALUES_PER_DIGIT
-#define DEFAULT_COUNTER_VALUES  "60;60;60;60;60;60;60;60;60;60;60;"
-#define DEFAULT_REPETITIONS     1
+#define VALUES_PER_DIGIT         11
+#define FIELD_COUNT_EXPECTED     VALUES_PER_DIGIT+2
+
+// format 11 digit times; use  11th ; repetitions
+#define DEFAULT_VALUES_ZIN70     "60;60;60;60;60;60;60;60;60;60;60;1;3"
+#define DEFAULT_VALUES_ZIN18     "30;30;30;30;30;30;30;30;30;30;30;0;3"
+
+#define DEFAULT_TUBE_BOARD_COUNT 3
 
 // ----------------------------------------------------------------------------------------------------
-// ------------------------------------- SPIFFS Clock Component ---------------------------------------
+// ------------------------------------ Counter Manager Component -------------------------------------
 // ----------------------------------------------------------------------------------------------------
+
+typedef struct {
+  boolean valid;
+  uint digitTime[VALUES_PER_DIGIT];
+  bool use11thDigit;
+  uint repetitions;
+} config_set_t;
 
 class CounterManager_
 {
@@ -28,13 +39,20 @@ class CounterManager_
     CounterManager_ &operator=(const CounterManager_ &) = delete;
 
   public:
-    void setCounterValues(String counterArray);
-    String getCounterValues();
+    void setTubeType(tube_type_t newType);
+    tube_type_t getTubeType();
+    String getTubeTypeAsString();
+
+    void setCounterValues(tube_type_t tubeType, String counterArray);
+    String getCounterValues(tube_type_t tubeType);
+
+    // Get the counter values for the current tube type
+    String getCounterValuesInitial();
     String getCounterValuesCurrent();
+
     unsigned int getSecondsRemainingCurrentValue();
 
     int getRepetitions();
-    void setRepetitions(int inputRepetitions);
     int getRepetitionsCurrent();
 
     void startCounter();
@@ -51,16 +69,18 @@ class CounterManager_
   private:
     void copyInitialArrayToCurrent();
     void copyInitialRepetitionsToCurrent();
-    void loadDefaultValues();
-    String _counterValues = "";
+    config_set_t getCurrentConfigSet();
+    config_set_t parseConfigString(String inputString);
+
     bool _counterRunning = false;
     bool _counterDone = false;
     bool _counterDoneConfirmed = false;
-    byte _digitInitialValues[VALUES_PER_DIGIT];
     byte _digitCurrentValues[VALUES_PER_DIGIT];
-    int  _repetitionsInitial = 0;
     int  _repetitionsCurrent = 0;
     unsigned int _currentCount = 0;
+    tube_type_t _currentTubeType = ZIN70;
+    config_set_t configZIN70;
+    config_set_t configZIN18;
 };
 
 extern CounterManager_ &counterManager;

@@ -32,6 +32,8 @@ enum menuTargets {
   gotoOptionsMenu,
   menuOff,
 
+  toggleTubeType,
+
   toggleWiFiAtStart,
   disconnectWifi,
   resetWiFiInfo,
@@ -176,6 +178,9 @@ class MenuManager_ {
     void calculateAndSaveHourValue();
     void calculateAndSaveMinuteValue();
     void setWiFiSSIDFromSelection();
+
+    void confirmButtonPress();
+    void backButtonPress();
 };
 
 extern MenuManager_ &menuManager;

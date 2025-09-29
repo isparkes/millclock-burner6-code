@@ -17,14 +17,11 @@ typedef struct {
   String WiFiPassword;
   bool WifiOnAtStart;
 
-  String counterValues;
-  int repetitions;
-
+  String counterValuesZIN70;
+  String counterValuesZIN18;
   int tubeType;
   int tubeBoardCount;
 
-  bool testMode;
-  bool wasSetup;
 } spiffs_config_t;
 
 typedef struct {

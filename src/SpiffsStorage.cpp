@@ -39,9 +39,11 @@ bool SpiffsStorage_::getConfigFromSpiffs()
       configFile.readBytes(buf.get(), size);
       DynamicJsonBuffer jsonBuffer;
       JsonObject &json = jsonBuffer.parseObject(buf.get());
-      // // Dump the raw JSON
-      // if (_debug) json.printTo(Serial);
-      //   debugMsgSpfX("\n");
+      #ifdef SPF_EXTENDED_DEBUG
+      // Dump the raw JSON
+      json.printTo(Serial);
+      debugMsgSpfX("\n");
+      #endif
       if (json.success())
       {
         debugMsgSpfX("parsed config json");
@@ -55,12 +57,6 @@ bool SpiffsStorage_::getConfigFromSpiffs()
         cc->webPassword = json["webPassword"].as<String>();
         debugMsgSpfX("Loaded webPassword: " + cc->webPassword);
 
-        cc->testMode = json["testMode"].as<bool>();
-        debugMsgSpfX("Loaded testMode: " + String(cc->testMode));
-
-        cc->wasSetup = json["wasSetup"].as<bool>();
-        debugMsgSpfX("Loaded wasSetup: " + String(cc->wasSetup));
-
         cc->WiFiSSID = json["WiFiSSID"].as<String>();
         debugMsgSpfX("Loaded WiFiSSID: " + String(cc->WiFiSSID));
 
@@ -70,11 +66,11 @@ bool SpiffsStorage_::getConfigFromSpiffs()
         cc->WifiOnAtStart = json["WifiOnAtStart"].as<bool>();
         debugMsgSpfX("Loaded WifiOnAtStart: " + String(cc->WifiOnAtStart));
 
-        cc->counterValues = json["counterValues"].as<String>();
-        debugMsgSpfX("Loaded counterValues: " + cc->counterValues);
+        cc->counterValuesZIN70 = json["counterValuesZIN70"].as<String>();
+        debugMsgSpfX("Loaded counterValues ZIN70: " + cc->counterValuesZIN70);
 
-        cc->repetitions = json["repetitions"];
-        debugMsgSpfX("Loaded repetitions: " + String(cc->repetitions));
+        cc->counterValuesZIN18 = json["counterValuesZIN18"].as<String>();
+        debugMsgSpfX("Loaded counterValues ZIN18: " + cc->counterValuesZIN18);
 
         cc->tubeType = json["tubeType"];
         debugMsgSpfX("Loaded tubeType: " + String(cc->tubeType));
@@ -108,13 +104,11 @@ void SpiffsStorage_::saveConfigToSpiffs()
   json["webAuthentication"] = cc->webAuthentication;
   json["webUsername"] = cc->webUsername;
   json["webPassword"] = cc->webPassword;
-  json["testMode"] = cc->testMode;
-  json["wasSetup"] = cc->wasSetup;
   json["WiFiSSID"] = cc->WiFiSSID;
   json["WiFiPassword"] = cc->WiFiPassword;
   json["WifiOnAtStart"] = cc->WifiOnAtStart;
-  json["counterValues"] = cc->counterValues;
-  json["repetitions"] = cc->repetitions;
+  json["counterValuesZIN70"] = cc->counterValuesZIN70;
+  json["counterValuesZIN18"] = cc->counterValuesZIN18;
   json["tubeType"] = cc->tubeType;
   json["tubeBoardCount"] = cc->tubeBoardCount;
   

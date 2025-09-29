@@ -59,6 +59,15 @@ void setup() {
   pinMode(LATCHPin, OUTPUT);
   pinMode(BLANKPin, OUTPUT);
 
+  // for (int i = 0; i < 200; i++) {
+  //   bool state = (i % 2) == 0;
+  //   digitalWrite(DATAPin, state);
+  //   digitalWrite(CLKPin, state);
+  //   digitalWrite(LATCHPin, state);
+  //   digitalWrite(BLANKPin, state);
+  //   delay(10);
+  // }
+
   pinMode(BTN1Pin, INPUT_PULLUP);
   pinMode(BTN2Pin, INPUT_PULLUP);
 
@@ -94,6 +103,7 @@ void setup() {
   } else {
     debugMsgMain("SPIFFS storage: read config failed - do factory reset");
     resetOptions();
+    spiffsStorage.saveConfigToSpiffs();
   }
 
   // -------------------------------------------------------------------------
@@ -102,8 +112,6 @@ void setup() {
 
   // Starts the display and the status LED flashing
   startTimers();
-
-//  startChirp();
 
   // -------------------------------------------------------------------------
   // First start digit test
@@ -182,15 +190,10 @@ void setup() {
   // -------------------------------------------------------------------------
 
   debugMsgMain("Load counter configuration...");
-  counterManager.setCounterValues(cc->counterValues);
-  counterManager.setRepetitions(cc->repetitions);
-
-  if (cc->tubeType == ZIN70) {
-    tube_type = ZIN70;
-  } else {
-    tube_type = ZIN18;
-  }
-
+  counterManager.setCounterValues(ZIN70, cc->counterValuesZIN70);
+  counterManager.setCounterValues(ZIN18, cc->counterValuesZIN18);
+  counterManager.setTubeType((tube_type_t)cc->tubeType);
+ 
   debugMsgMain("Got board count: " + String(cc->tubeBoardCount));
 
   counterManager.startCounter();
@@ -257,7 +260,7 @@ void performOncePerSecondProcessing() {
 
   // These are inverted because the display is active low
   digitalWrite(IND1Pin, !ind1Value);
-  digitalWrite(IND2Pin, !tube_type == ZIN70);
+  digitalWrite(IND2Pin, !cc->tubeType == ZIN70);
 
   // -------------------------------------------------------------------------------
   

@@ -37,8 +37,6 @@ extern spiffs_stats_t* cs;
 extern volatile uint32_t dispVal;
 extern volatile uint8_t dispBoardCount;
 
-extern tube_type_t tube_type;
-
 extern portMUX_TYPE timerMux1;
 extern portMUX_TYPE encoderMux;
 

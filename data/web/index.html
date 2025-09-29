@@ -70,6 +70,10 @@
                             <td id="counterValues"></td>
                         </tr>
                         <tr>
+                            <td>Tube Type</td>
+                            <td id="tubeType"></td>
+                        </tr>
+                        <tr>
                             <td>Counter repetitions</td>
                             <td id="repetitions"></td>
                         </tr>
@@ -149,6 +153,7 @@
     getCounterStatus = function() {
         getCounterStatusAPI().then(function(status){
             $("#counterValues").text(status.counterValuesCurrent);
+            $("#tubeType").text(status.tubeType);  
             $("#repetitions").text(status.repetitions);
             $("#status").text(status.counterStatus);
 

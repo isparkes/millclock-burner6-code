@@ -122,7 +122,7 @@ void OLED_::drawEndInd() {
 
 void OLED_::drawTubeTypeInd() {
   _display->setCursor(TUBE_IND_X,STATUS_LINE_Y);
-  if (tube_type == ZIN70) {
+  if (cc->tubeType == ZIN70) {
     _display->print("T:70");
   } else {
     _display->print("T:18");

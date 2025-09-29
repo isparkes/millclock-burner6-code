@@ -13,9 +13,6 @@ volatile int count0;
 volatile int count0Max = COUNT0_MAX;
 volatile int count0Off = COUNT0_OFF;
 
-// These variables hold the impression data
-extern volatile uint32_t val1;
-
 volatile uint32_t _dispVal = 0;
 volatile uint8_t _dispBoardCount = 3;
 

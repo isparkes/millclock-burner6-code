@@ -55,13 +55,17 @@ String secsToReadableString (long secsValue) {
 // Reset settings to factory defaults
 // ************************************************************
 void resetOptions() {
-  cc->testMode = true;
-  cc->wasSetup = true;
-
+  cc->webAuthentication = false;
+  cc->webUsername = "";
+  cc->webPassword = "";
+  cc->WifiOnAtStart = true;
   cc->WiFiSSID = "";
   cc->WiFiPassword = "";
-  cc->repetitions = DEFAULT_REPETITIONS;
-  cc->counterValues = DEFAULT_COUNTER_VALUES;
+  cc->counterValuesZIN70 = DEFAULT_VALUES_ZIN70;
+  cc->counterValuesZIN18 = DEFAULT_VALUES_ZIN18;
+  cc->tubeType = ZIN70;
+  cc->tubeBoardCount = DEFAULT_TUBE_BOARD_COUNT;
+  spiffsStorage.saveConfigToSpiffs();
 }
 
 // ************************************************************
@@ -197,9 +201,9 @@ void getConfigDataHandler(AsyncWebServerRequest *request) {
   JsonObject &root = jsonBuffer.createObject();
 
   root["WifiOnAtStart"] = cc->WifiOnAtStart;
-  root["counterValues"] = counterManager.getCounterValues();
-  root["repetitions"] = counterManager.getRepetitions();
-  root["tubeType"] = tube_type;
+  root["counterValuesZIN70"] = counterManager.getCounterValues(ZIN70);
+  root["counterValuesZIN18"] = counterManager.getCounterValues(ZIN18);
+  root["tubeType"] = cc->tubeType;
   root["tubeBoardCount"] = cc->tubeBoardCount;
 
   root.printTo(*response);
@@ -294,16 +298,21 @@ void postConfigDataHandler(AsyncWebServerRequest *request) {
     // ------------------------------------------------------------
 
     compareAndUpdateBool  (json, "WifiOnAtStart",&cc->WifiOnAtStart);
-    compareAndUpdateInt   (json, "repetitions",&cc->repetitions);
-    compareAndUpdateString(json, "counterValues",&cc->counterValues);
+    compareAndUpdateString(json, "counterValuesZIN70",&cc->counterValuesZIN70);
+    compareAndUpdateString(json, "counterValuesZIN18",&cc->counterValuesZIN18);
+    compareAndUpdateInt   (json, "tubeType",&cc->tubeType);
     compareAndUpdateInt   (json, "tubeBoardCount",&cc->tubeBoardCount);
 
-    if (!counterManager.getCounterValues().equals(cc->counterValues)) {
-      counterManager.setCounterValues(cc->counterValues);
+    if (!counterManager.getCounterValues(ZIN70).equals(cc->counterValuesZIN70)) {
+      counterManager.setCounterValues(ZIN70, cc->counterValuesZIN70);
     }
 
-    if (counterManager.getRepetitions() != cc->repetitions) {
-      counterManager.setRepetitions(cc->repetitions);
+    if (!counterManager.getCounterValues(ZIN18).equals(cc->counterValuesZIN18)) {
+      counterManager.setCounterValues(ZIN18, cc->counterValuesZIN18);
+    }
+
+    if (counterManager.getTubeType() != cc->tubeType) {
+      counterManager.setTubeType(tube_type_t(cc->tubeType));
     }
 
     // ------------------------------------------------------------
@@ -556,7 +565,9 @@ void counterStatusHandler(AsyncWebServerRequest *request) {
   debugMsgUtl("Got counter status request");
   #endif
   String counterValuesCurrent = counterManager.getCounterValuesCurrent();
-  String counterValuesInitial = counterManager.getCounterValues();
+  tube_type_t tubeType = counterManager.getTubeType();
+  String tubeTypeString = counterManager.getTubeTypeAsString();
+  String counterValuesInitial = counterManager.getCounterValues(tubeType);
   int repetitions = counterManager.getRepetitionsCurrent();
   String counterStatus = "Unknown";
   if (counterManager.isCounterRunning()) {
@@ -567,7 +578,7 @@ void counterStatusHandler(AsyncWebServerRequest *request) {
     counterStatus = "Stopped";
   }
 
-  request->send(200, "text/json", "{\"counterValuesCurrent\": \"" + counterValuesCurrent + "\", \"counterValuesInitial\": \"" + counterValuesInitial + "\", \"repetitions\": \"" + String(repetitions) + "\", \"counterStatus\": \"" + counterStatus + "\"}");
+  request->send(200, "text/json", "{\"tubeType\": \"" + tubeTypeString + "\", \"counterValuesCurrent\": \"" + counterValuesCurrent + "\", \"counterValuesInitial\": \"" + counterValuesInitial + "\", \"repetitions\": \"" + String(repetitions) + "\", \"counterStatus\": \"" + counterStatus + "\"}");
 }
 
 // ************************************************************

@@ -4,10 +4,12 @@
 // Load the digit to display into the internal buffer
 // ************************************************************
 void OutputManager_::loadNumberIntegerValue(unsigned int newValue) {
-  if (tube_type == ZIN70) {
+  if (cc->tubeType == ZIN70) {
     decodedValue = decodeFromNumberArray(newValue  % CATHODE_COUNT_ZIN70);
-  } else if (tube_type == ZIN18) {
+  } else if (cc->tubeType == ZIN18) {
     decodedValue = decodeFromNumberArray(newValue  % CATHODE_COUNT_ZIN18);
+  } else {
+    debugManager.debugMsg("OutputManager", "Unknown tube type");
   }
 
   #ifdef OTM_EXTENDED_DEBUG
@@ -41,9 +43,9 @@ uint32_t OutputManager_::decodeFromNumberArray(byte valueToDecode) {
 
   // for the case that our 595s don't have and output enable pin
   if (!blanked) {
-    if (tube_type == ZIN70) {
+    if (cc->tubeType == ZIN70) {
       decodedOneDigit = DECODE_DIGIT_ZIN70[valueToDecode];    
-    } else if (tube_type == ZIN18) {
+    } else if (cc->tubeType == ZIN18) {
       decodedOneDigit = DECODE_DIGIT_ZIN18[valueToDecode];
     }
   }

@@ -7,12 +7,35 @@
 //**********************************************************************************
 
 // ************************************************************
+// Get the current config set
+// ************************************************************
+config_set_t CounterManager_::getCurrentConfigSet() {
+  config_set_t currentConfigSet;
+  switch (_currentTubeType)
+  {
+  case ZIN70:
+    currentConfigSet = configZIN70;
+    break;
+  case ZIN18:
+    currentConfigSet = configZIN18;
+    break;
+  default:
+    currentConfigSet = configZIN70;
+    break;
+  }
+
+  return currentConfigSet;
+}
+
+// ************************************************************
 // Reset the current counter values to the initial values 
 // ************************************************************
 void CounterManager_::copyInitialArrayToCurrent() {
+  config_set_t currentConfigSet = getCurrentConfigSet();
+
   // Copy the initial values to the current values
   for (int digit = 0 ; digit < VALUES_PER_DIGIT ; digit++) {
-    _digitCurrentValues[digit] = _digitInitialValues[digit];
+    _digitCurrentValues[digit] = currentConfigSet.digitTime[digit];
   }
 }
 
@@ -20,61 +43,127 @@ void CounterManager_::copyInitialArrayToCurrent() {
 // Reset the current repetition values to the initial values
 // ************************************************************
 void CounterManager_::copyInitialRepetitionsToCurrent() {
-  _repetitionsCurrent = _repetitionsInitial;
+  config_set_t currentConfigSet = getCurrentConfigSet();
+
+  _repetitionsCurrent = currentConfigSet.repetitions;
 }
 
 // ************************************************************
-// Load the default values
-// This is used when the values are not set or are invalid
+// Set the current tube type
 // ************************************************************
-void CounterManager_::loadDefaultValues() {
-  debugMsgCmg("Loading default values");
-  _counterValues = DEFAULT_COUNTER_VALUES;
-  _repetitionsInitial = DEFAULT_REPETITIONS;
-  for (int digit = 0 ; digit < VALUES_PER_DIGIT ; digit++) {
-    _digitInitialValues[digit] = 0;
-  }
+void CounterManager_::setTubeType(tube_type_t newType) {
+  _currentTubeType = newType;
+
 }
+
+// ************************************************************
+// Get the current tube type
+// ************************************************************
+tube_type_t CounterManager_::getTubeType() {
+  return _currentTubeType;
+}
+
+// ************************************************************
+// Get the current tube type as a string
+// ************************************************************
+String CounterManager_::getTubeTypeAsString() {
+  if( _currentTubeType == ZIN70 ) {
+    return "ZIN70";
+  } else if ( _currentTubeType == ZIN18 ) {
+    return "ZIN18";
+  } else {
+    return "Unknown";
+  }
+} 
 
 // ************************************************************
 // Set and parse the counter values from the separated string
 // ************************************************************
-void CounterManager_::setCounterValues(String inputString) {
-  _counterValues = inputString;
-  int fieldCountFound = getValueCount(_counterValues, ';');
-  if (fieldCountFound != FIELD_COUNT_EXPECTED) {
-    debugMsgCmg("Wrong number of fields. Got " + String(fieldCountFound) + " fields from, inputString (" + inputString + "), but was expecting " + String(FIELD_COUNT_EXPECTED) + ". Loading default values: (" + String(DEFAULT_COUNTER_VALUES) + ")");
-    _counterValues = DEFAULT_COUNTER_VALUES;
-    loadDefaultValues();
-    spiffsStorage.saveConfigToSpiffs();
-  } else {
-    int index = 0;
-
-    // Digits
-    for (int digit = 0 ; digit < VALUES_PER_DIGIT ; digit++) {
-      String valueString = getValueAtIndex(_counterValues, ';', index);
-      int value = atoi(valueString.c_str());
-      index++;
-      debugMsgCmg("Value at index " + String(index) + " = " + String(value));
-      _digitInitialValues[digit] = value;
-    }
-
-    // Repetitons
-    String valueString = getValueAtIndex(_counterValues, ';', index);
-    _repetitionsInitial = atoi(valueString.c_str());
-    index++;
-    debugMsgCmg("Repetitions: " + String(_repetitionsInitial));
-    _counterRunning = false;
+void CounterManager_::setCounterValues(tube_type_t tubeType, String inputString) {
+  config_set_t newConfig = parseConfigString(inputString);
+  if (!newConfig.valid) {
+    debugMsgCmg("Invalid configuration string: " + inputString);
+    return;
   }
 
+  if (tubeType == ZIN70) {
+    configZIN70 = newConfig;
+    debugMsgCmg("Set new configuration for ZIN70 from string: " + inputString);
+  } else if (tubeType == ZIN18) {
+    configZIN18 = newConfig;
+    debugMsgCmg("Set new configuration for ZIN18 from string: " + inputString);
+  } else {
+    debugMsgCmg("Invalid tube type specified.");
+    return;
+  }
+
+  // Reset the current values to match the new initial values
   copyInitialArrayToCurrent();
   copyInitialRepetitionsToCurrent();
 }
 
 // ************************************************************
+// Parse a config set from the separated string
+// ************************************************************
+config_set_t CounterManager_::parseConfigString(String inputString) {
+  config_set_t result;
+  int fieldCountFound = getValueCount(inputString, ';');
+  if (fieldCountFound != FIELD_COUNT_EXPECTED) {
+    debugMsgCmg("Wrong number of fields. Got " + String(fieldCountFound) + " fields from, inputString (" + inputString + "), but was expecting " + String(FIELD_COUNT_EXPECTED) + ".");
+    result.valid = false;
+    return result;
+  }
+
+  // digit times
+  for (int digit = 0 ; digit < VALUES_PER_DIGIT ; digit++) {
+    String valueString = getValueAtIndex(inputString, ';', digit);
+    int value = atoi(valueString.c_str());
+    debugMsgCmg("Value at index " + String(digit) + " = " + String(value));
+    result.digitTime[digit] = value;
+  }
+
+  // use 11th digit
+  String use11thString = getValueAtIndex(inputString, ';', VALUES_PER_DIGIT);
+  bool use11thDigit = atoi(use11thString.c_str());
+  debugMsgCmg("use11thDigit: " + String(use11thDigit));
+  result.use11thDigit = use11thDigit;
+  
+  // repetitions
+  String repetitionsString = getValueAtIndex(inputString, ';', VALUES_PER_DIGIT + 1);
+  int repetitions = atoi(repetitionsString.c_str());
+  debugMsgCmg("Repetitions: " + String(repetitions));
+  result.repetitions = repetitions;
+
+  // we got to the end, the result looks valid
+  result.valid = true;
+  return result;
+}
+
+// ************************************************************
 // Set and parse the counter values from the separated string
 // ************************************************************
-String CounterManager_::getCounterValues() {
+String CounterManager_::getCounterValues(tube_type_t tubeType) {
+  String _counterValues = "";
+  config_set_t config;
+  if (tubeType == ZIN70) {
+    config = configZIN70;
+  } else if (tubeType == ZIN18) {
+    config = configZIN18;
+  } else {
+    debugMsgCmg("Invalid tube type specified.");
+  }
+
+  if (!config.valid) {
+    debugMsgCmg("Configuration for specified tube type is not valid.");
+    return "Invalid";
+  }
+
+  for (int digit = 0 ; digit < VALUES_PER_DIGIT ; digit++) {
+    _counterValues = _counterValues + String(config.digitTime[digit]) + ";";
+  }
+  _counterValues = _counterValues + String(tubeType == ZIN70 ? "0" : "1") + ";";
+  _counterValues = _counterValues + String(config.repetitions);
+
   return _counterValues;
 }
 
@@ -82,7 +171,9 @@ String CounterManager_::getCounterValues() {
 // Get the repetition value
 // ************************************************************
 int CounterManager_::getRepetitions() {
-  return _repetitionsInitial;
+  config_set_t currentConfigSet = getCurrentConfigSet();
+  
+  return currentConfigSet.repetitions;
 }
 
 // ************************************************************
@@ -101,14 +192,6 @@ String CounterManager_::getCounterValuesCurrent() {
 // ************************************************************
 int CounterManager_::getRepetitionsCurrent() {
   return _repetitionsCurrent;
-}
-
-// ************************************************************
-// Set the repetition value
-// ************************************************************
-void CounterManager_::setRepetitions(int inputRepetitions) {
-  _repetitionsInitial = inputRepetitions;
-  copyInitialRepetitionsToCurrent();
 }
 
 // ************************************************************
@@ -162,7 +245,7 @@ void CounterManager_::counterCount() {
   if(valueIndex == VALUES_PER_DIGIT) {
     if (_repetitionsCurrent > 1) {
       _repetitionsCurrent--;
-      debugMsgCmg("New repetition: Remaining: " + String(_repetitionsCurrent) + " of " + String(_repetitionsInitial));
+      debugMsgCmg("New repetition: Remaining: " + String(_repetitionsCurrent) + " of " + String(getRepetitions()));
 
       copyInitialArrayToCurrent();
       valueIndex = 0;

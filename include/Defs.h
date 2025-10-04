@@ -24,8 +24,8 @@
 #define LATCHPin  TX2
 
 // Encoder
-#define ENC_APin  5
-#define ENC_BPin  14
+#define ENC_APin  14
+#define ENC_BPin  5
 #define ENC_BTN   16
 
 // Internally defined

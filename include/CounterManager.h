@@ -58,9 +58,12 @@ class CounterManager_
     void startCounter();
     void stopCounter();
     void resetCounter();
+    void setDigit(byte digit);
+    String getNextDigitString();
     void counterCount();
     bool isCounterRunning();
     bool isCounterExpired();
+    bool isCounterInhibited();
     bool isCounterExpiredConfirmed();
     void confirmCounterExpired();
     unsigned int getCurrentCounterVal();
@@ -73,10 +76,12 @@ class CounterManager_
     config_set_t parseConfigString(String inputString);
 
     bool _counterRunning = false;
+    bool _counterInhibit = false; // used to stop counting when setting single digits
     bool _counterDone = false;
     bool _counterDoneConfirmed = false;
     byte _digitCurrentValues[VALUES_PER_DIGIT];
     int  _repetitionsCurrent = 0;
+    byte _setDigit = 0;
     unsigned int _currentCount = 0;
     tube_type_t _currentTubeType = ZIN70;
     config_set_t configZIN70;

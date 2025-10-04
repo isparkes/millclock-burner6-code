@@ -17,10 +17,12 @@
 #define OLED_ON_LONG         2            // 
 #define OLED_ON_DEF          1            // Default value
 
-#define OLED_ON_TIME  60                  //
+#define OLED_ON_TIME         14400        // 4 Hours
 
 #define CONFIG_TIME         10            // Time in seconds we stay in config mode
 #define FLASH_TIME           2            // Time in seconds we show an OLED flash message for
+
+#define TICKS_PER_MOVE       2            // number of encoder ticks before we move one position in a menu
 
 enum menuTargets {
   noTarget,
@@ -28,12 +30,14 @@ enum menuTargets {
 
   // Move around in menus
   backToMain,
+  gotoBurnMenu,
+  gotoSingleBurnMenu,
+  backToBurn,
   gotoWifiMenu,
   gotoOptionsMenu,
   menuOff,
 
-  toggleTubeType,
-
+  // WiFi management
   toggleWiFiAtStart,
   disconnectWifi,
   resetWiFiInfo,
@@ -49,13 +53,16 @@ enum menuTargets {
   enterWiFiSSID,
   saveWiFiSSID,
 
+  // Digit management
+  toggleTubeType,
   stopBurn,
   startBurn,
   resetBurn,
+  setDigit,
+
+  // System options
   restartClock,
-  saveStats,
   saveConfig,
-  displayTest,
   debugOn10mins
 };
 
@@ -72,9 +79,9 @@ enum menuModes {
 struct oledMenus {
   // menu
   String menuTitle = "";                    // the title of active mode
-  int noOfmenuItems = 0;                    // number if menu items in the active menu
-  int selectedMenuItem = 0;                 // when a menu item is selected it is flagged here until actioned and cleared
-  int highlightedMenuItem = 0;              // which item is curently highlighted in the menu
+  byte noOfmenuItems = 0;                   // number if menu items in the active menu
+  byte selectedMenuItem = 0;                // when a menu item is selected it is flagged here until actioned and cleared
+  byte highlightedMenuItem = 0;             // which item is curently highlighted in the menu
   String menuItems[maxmenuItems+1];         // store for the menu item titles
   menuTargets menuActions[maxmenuItems+1];  // The action to carry out
   uint32_t lastMenuActivity = 0;            // time the menu last saw any activity (used for timeout)
@@ -102,7 +109,6 @@ struct rotaryEncoders {
 };
 
 const bool menuLargeText = 0;             // show larger text when possible (if struggling to read the small text)
-const int itemTrigger = 2;                // rotary encoder - counts per tick (varies between encoders usually 1 or 2)
 const int topLine = 18;                   // y position of lower area of the display (18 with two colour displays)
 const byte lineSpace1 = 9;                // line spacing for textsize 1 (small text)
 const byte lineSpace2 = 17;               // line spacing for textsize 2 (large text)
@@ -128,11 +134,12 @@ class MenuManager_ {
     void setupMenuManager();
     void ICACHE_RAM_ATTR doEncoder();
     void flashMenuMessage(String heading, String message);
+    void clearFlashMenuMessage();
     void scrollMenuMessage(String message);
     int  getCurrentEncoderPos();
     void menuOncePerSecond();
     void menuOncePerHour();
-    void menuLoop();
+    void menuOncePerLoop();
     bool getOledIsBlanked();
   private:
     menuModes menuMode = off;                 // default mode at startup is off
@@ -150,6 +157,8 @@ class MenuManager_ {
 
     // Menus
     void mainMenu();
+    void burnMenu();
+    void burnSingleDigitMenu();
     void wifiMenu();
     void systemMenu();
     void nixieClockMenu();
@@ -174,10 +183,13 @@ class MenuManager_ {
     void resetTimeouts();
     void countdownMenuTimeouts();
     void manageMenu();
-
+    byte getMenuOptionSelected();
+    String getMenuOptionSelectedText();
+    String getMenuValueEnteredText();
     void calculateAndSaveHourValue();
     void calculateAndSaveMinuteValue();
     void setWiFiSSIDFromSelection();
+    void serviceStatusDisplayClick();
 
     void confirmButtonPress();
     void backButtonPress();

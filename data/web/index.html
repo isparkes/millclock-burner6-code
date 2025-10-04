@@ -62,8 +62,8 @@
                             <td id="clockurl"></td>
                         </tr>
                         <tr>
-                            <td>Version</td>
-                            <td id="version"></td>
+                            <td>Software Version</td>
+                            <td id="softwareVersion"></td>
                         </tr>
                         <tr>
                             <td>Counter counts (Autoreload <input class="form-check-input" type="checkbox" value="" id="refreshToggle" onclick="toggleRefresh()">)</td>
@@ -127,7 +127,7 @@
             $("#mac").text(summary.mac);
             $("#ssid").text(summary.ssid);
             $("#clockurl").html("<a href=\""+summary.clockurl+"\">"+summary.clockurl+"</a>");
-            $("#version").text(summary.version);
+            $("#softwareVersion").text(summary.version);
         })
         .then(() => removeLoader());
     };

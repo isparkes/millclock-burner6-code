@@ -46,6 +46,9 @@ void OLED_::outputDisplay()
   _display->display();
 }
 
+// ************************************************************
+// Clear the scrolling message buffer
+// ************************************************************
 void OLED_::clearScrollingMessage()
 {
   for (int tmpBuffer =  0 ; tmpBuffer < 6; tmpBuffer++) {
@@ -54,6 +57,9 @@ void OLED_::clearScrollingMessage()
   _bufferIdx = 0;  
 }
 
+// ************************************************************
+// Add a message to the scrolling message buffer
+// ************************************************************
 void OLED_::showScrollingMessage(String messageText)
 {
   String formattedString = messageText + "                   ";
@@ -75,6 +81,9 @@ void OLED_::showScrollingMessage(String messageText)
   _display->display();
 }
 
+// ************************************************************
+// Build the status line
+// ************************************************************
 void OLED_::showStatusLine()
 {
   _display->fillRect(STATUS_BOX_X, STATUS_BOX_Y, STATUS_BOX_W, STATUS_BOX_H, BLACK);
@@ -88,10 +97,7 @@ void OLED_::showStatusLine()
   _display->display();
 }
 
-void OLED_::setTimeString(String newTimeText)
-{
-  _timeText = newTimeText;
-}
+// --------------------------------------------------
 
 void OLED_::drawWiFiInd() {
   _display->setCursor(WIFI_IND_X,STATUS_LINE_Y);
@@ -102,14 +108,20 @@ void OLED_::drawWiFiInd() {
   }
 }
 
+// --------------------------------------------------
+
 void OLED_::drawRunInd() {
   _display->setCursor(RUN_IND_X,STATUS_LINE_Y);
-  if (counterManager.isCounterRunning()) {
+  if(counterManager.isCounterInhibited()) {
+    _display->print("I");
+  } else if (counterManager.isCounterRunning()) {
     _display->print("R");
   } else {
     _display->print("-");
   }
 }
+
+// --------------------------------------------------
 
 void OLED_::drawEndInd() {
   _display->setCursor(END_IND_X,STATUS_LINE_Y);
@@ -120,6 +132,8 @@ void OLED_::drawEndInd() {
   }
 }
 
+// --------------------------------------------------
+
 void OLED_::drawTubeTypeInd() {
   _display->setCursor(TUBE_IND_X,STATUS_LINE_Y);
   if (cc->tubeType == ZIN70) {
@@ -129,16 +143,30 @@ void OLED_::drawTubeTypeInd() {
   }
 }
 
+// --------------------------------------------------
+
 void OLED_::drawValueInd() {
-  _display->setCursor(VAL_IND_X,STATUS_LINE_Y);
-  _display->print("V:" + counterManager.getCurrentCounterValString() + ":" + String(counterManager.getSecondsRemainingCurrentValue()));
+  if(counterManager.isCounterInhibited()) {
+    _display->setCursor(VAL_IND_X,STATUS_LINE_Y);
+    _display->print(" >>> " + counterManager.getCurrentCounterValString() + " <<<");
+  } else {
+    _display->setCursor(VAL_IND_X,STATUS_LINE_Y);
+    _display->print("V:" + counterManager.getCurrentCounterValString() + ":" + String(counterManager.getSecondsRemainingCurrentValue()));
+    }
 }
+
+// --------------------------------------------------
 
 void OLED_::drawRepetitionsInd() {
-  _display->setCursor(REP_IND_X,STATUS_LINE_Y);
-  _display->print("R:" + String(counterManager.getRepetitionsCurrent()));
+  if(!counterManager.isCounterInhibited()) {
+    _display->setCursor(REP_IND_X,STATUS_LINE_Y);
+    _display->print("R:" + String(counterManager.getRepetitionsCurrent()));
+  }
 }
 
+// ************************************************************
+// Show a menu heading
+// ************************************************************
 void OLED_::showMenuHeading(String menuText) {
   _display->setCursor(0,0);
   _display->setTextColor(BLACK, WHITE);
@@ -146,6 +174,9 @@ void OLED_::showMenuHeading(String menuText) {
   _display->setTextColor(WHITE, BLACK);
 }
 
+// ************************************************************
+// Show a menu entry
+// ************************************************************
 void OLED_::showMenuEntry(byte level, String menuText) {
   int16_t posX = level*4;
   int16_t posY = 4 + level*8;
@@ -153,6 +184,9 @@ void OLED_::showMenuEntry(byte level, String menuText) {
   _display->print(menuText);
 }
 
+// ************************************************************
+// Blank a menu entry
+// ************************************************************
 void OLED_::blankMenuEntry(byte level) {
   int16_t posX = level*4;
   int16_t posY = 4 + level*8;

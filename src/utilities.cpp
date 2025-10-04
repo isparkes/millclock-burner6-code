@@ -206,6 +206,10 @@ void getConfigDataHandler(AsyncWebServerRequest *request) {
   root["tubeType"] = cc->tubeType;
   root["tubeBoardCount"] = cc->tubeBoardCount;
 
+  if(counterManager.isCounterInhibited()) {
+    root["counterBurnValue"] = String(counterManager.getCurrentCounterVal());
+  }
+
   root.printTo(*response);
   request->send(response);
 }
@@ -315,6 +319,18 @@ void postConfigDataHandler(AsyncWebServerRequest *request) {
       counterManager.setTubeType(tube_type_t(cc->tubeType));
     }
 
+    if(checkPresence(json,"counterBurnValue")) {
+      String newBurnValue = json["counterBurnValue"];
+      int newBurnValueInt = newBurnValue.toInt();
+      debugMsgUtl("New burn value int: " + String(newBurnValueInt));
+      counterManager.setDigit(newBurnValueInt); // Force the first digit to be set
+    } else {
+      debugMsgUtl("Resetting burn value");
+      if (counterManager.isCounterInhibited()) {
+        counterManager.setDigit(255);
+      }
+    }
+  
     // ------------------------------------------------------------
 
     spiffsStorage.saveConfigToSpiffs();
@@ -576,6 +592,10 @@ void counterStatusHandler(AsyncWebServerRequest *request) {
     counterStatus = "Finished";
   } else {
     counterStatus = "Stopped";
+  }
+
+  if (counterManager.isCounterInhibited()) {
+    counterStatus += " / Single Digit Mode";
   }
 
   request->send(200, "text/json", "{\"tubeType\": \"" + tubeTypeString + "\", \"counterValuesCurrent\": \"" + counterValuesCurrent + "\", \"counterValuesInitial\": \"" + counterValuesInitial + "\", \"repetitions\": \"" + String(repetitions) + "\", \"counterStatus\": \"" + counterStatus + "\"}");

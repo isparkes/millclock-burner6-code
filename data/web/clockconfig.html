@@ -42,7 +42,7 @@
                 <div class="form-group">
                     <label class="control-label col-xs-3">Tube Type:</label>
                     <div class="col-xs-2">
-                        <select class="form-control" name="tubeType" id="tubeType" onChange="handleTubeTypeChange()">
+                        <select class="form-control" name="tubeType" id="tubeType" onclick="handleTubeTypeChange()">
                             <option value="0">ZIN70</option>
                             <option value="1">ZIN18</option>
                         </select>
@@ -50,69 +50,102 @@
                 </div>    
 
                 <div class="form-group">
-                    <label class="control-label col-xs-3" for="time-1-0">Digit 0:</label>
+                    <label class="control-label col-xs-3" for="time-0">Digit 0:</label>
                     <div class="col-xs-2">
-                        <input type="number" class="form-control" name="time-1-0" id="time-1-0" min="0" max="999" value="10">
+                        <input type="number" class="form-control" name="time-0" id="time-0" min="0" max="999" value="10">
+                    </div>
+                    <div class="col-xs-2">
+                        <input class="form-check-input" type="checkbox" value="" id="burn-0" onclick="handleBurnClick(this);">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="control-label col-xs-3" for="time-1-1">Digit 1:</label>
+                    <label class="control-label col-xs-3" for="time-1">Digit 1:</label>
                     <div class="col-xs-2">
-                        <input type="number" class="form-control" name="time-1-1" id="time-1-1" min="0" max="999" value="10">
+                        <input type="number" class="form-control" name="time-1" id="time-1" min="0" max="999" value="10">
+                    </div>
+                    <div class="col-xs-2">
+                        <input class="form-check-input" type="checkbox" value="" id="burn-1" onclick="handleBurnClick(this);">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="control-label col-xs-3" for="time-1-2">Digit 2:</label>
+                    <label class="control-label col-xs-3" for="time-2">Digit 2:</label>
                     <div class="col-xs-2">
-                        <input type="number" class="form-control" name="time-1-2" id="time-1-2" min="0" max="999" value="10">
+                        <input type="number" class="form-control" name="time-2" id="time-2" min="0" max="999" value="10">
+                    </div>
+                    <div class="col-xs-2">
+                        <input class="form-check-input" type="checkbox" value="" id="burn-2" onclick="handleBurnClick(this);">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="control-label col-xs-3" for="time-1-3">Digit 3:</label>
+                    <label class="control-label col-xs-3" for="time-3">Digit 3:</label>
                     <div class="col-xs-2">
-                        <input type="number" class="form-control" name="time-1-3" id="time-1-3" min="0" max="999" value="10">
+                        <input type="number" class="form-control" name="time-3" id="time-3" min="0" max="999" value="10">
+                    </div>
+                    <div class="col-xs-2">
+                        <input class="form-check-input" type="checkbox" value="" id="burn-3" onclick="handleBurnClick(this);">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="control-label col-xs-3" for="time-1-4">Digit 4:</label>
+                    <label class="control-label col-xs-3" for="time-4">Digit 4:</label>
                     <div class="col-xs-2">
-                        <input type="number" class="form-control" name="time-1-4" id="time-1-4" min="0" max="999" value="10">
+                        <input type="number" class="form-control" name="time-4" id="time-4" min="0" max="999" value="10">
+                    </div>
+                    <div class="col-xs-2">
+                        <input class="form-check-input" type="checkbox" value="" id="burn-4" onclick="handleBurnClick(this);">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="control-label col-xs-3" for="time-1-5">Digit 5:</label>
+                    <label class="control-label col-xs-3" for="time-5">Digit 5:</label>
                     <div class="col-xs-2">
-                        <input type="number" class="form-control" name="time-1-5" id="time-1-5" min="0" max="999" value="10">
+                        <input type="number" class="form-control" name="time-5" id="time-5" min="0" max="999" value="10">
+                    </div>
+                    <div class="col-xs-2">
+                        <input class="form-check-input" type="checkbox" value="" id="burn-5" onclick="handleBurnClick(this);">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="control-label col-xs-3" for="time-1-6">Digit 6:</label>
+                    <label class="control-label col-xs-3" for="time-6">Digit 6:</label>
                     <div class="col-xs-2">
-                        <input type="number" class="form-control" name="time-1-6" id="time-1-6" min="0" max="999" value="10">
+                        <input type="number" class="form-control" name="time-6" id="time-6" min="0" max="999" value="10">
+                    </div>
+                    <div class="col-xs-2">
+                        <input class="form-check-input" type="checkbox" value="" id="burn-6" onclick="handleBurnClick(this);">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="control-label col-xs-3" for="time-1-7">Digit 7:</label>
+                    <label class="control-label col-xs-3" for="time-7">Digit 7:</label>
                     <div class="col-xs-2">
-                        <input type="number" class="form-control" name="time-1-7" id="time-1-7" min="0" max="999" value="10">
+                        <input type="number" class="form-control" name="time-7" id="time-7" min="0" max="999" value="10">
+                    </div>
+                    <div class="col-xs-2">
+                        <input class="form-check-input" type="checkbox" value="" id="burn-7" onclick="handleBurnClick(this);">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="control-label col-xs-3" for="time-1-8">Digit 8:</label>
+                    <label class="control-label col-xs-3" for="time-8">Digit 8:</label>
                     <div class="col-xs-2">
-                        <input type="number" class="form-control" name="time-1-8" id="time-1-8" min="0" max="999" value="10">
+                        <input type="number" class="form-control" name="time-8" id="time-8" min="0" max="999" value="10">
+                    </div>
+                    <div class="col-xs-2">
+                        <input class="form-check-input" type="checkbox" value="" id="burn-8" onclick="handleBurnClick(this);">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="control-label col-xs-3" for="time-1-9">Digit 9:</label>
+                    <label class="control-label col-xs-3" for="time-9">Digit 9:</label>
                     <div class="col-xs-2">
-                        <input type="number" class="form-control" name="time-1-9" id="time-1-9" min="0" max="999" value="10">
+                        <input type="number" class="form-control" name="time-9" id="time-9" min="0" max="999" value="10">
+                    </div>
+                    <div class="col-xs-2">
+                        <input class="form-check-input" type="checkbox" value="" id="burn-9" onclick="handleBurnClick(this);">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="control-label col-xs-3" for="time-1-9">Digit K:</label>
+                    <label class="control-label col-xs-3" for="time-9">Digit K:</label>
                     <div class="col-xs-2">
-                        <input type="number" class="form-control" name="time-1-K" id="time-1-K" min="0" max="999" value="10">
+                        <input type="number" class="form-control" name="time-K" id="time-K" min="0" max="999" value="10">
+                    </div>
+                    <div class="col-xs-2">
+                        <input class="form-check-input" type="checkbox" value="" id="burn-K" onclick="handleBurnClick(this);">
                     </div>
                 </div>
                 <div>
@@ -192,29 +225,57 @@
         var values;
         if (config.tubeType == "0") {
             values = config.counterValuesZIN70.split(';');
-            $("#time-1-K").prop('disabled', false);
+            $("#time-K").prop('disabled', false);
+            $("#burn-K").prop('disabled', false);
         } else {
             values = config.counterValuesZIN18.split(';');
-            $("#time-1-K").prop('disabled', true);
+            $("#time-K").prop('disabled', true);
+            $("#burn-K").prop('disabled', true);
         }
 
-        $("#time-1-0").val(values[0]);
-        $("#time-1-1").val(values[1]);
-        $("#time-1-2").val(values[2]);
-        $("#time-1-3").val(values[3]);
-        $("#time-1-4").val(values[4]);
-        $("#time-1-5").val(values[5]);
-        $("#time-1-6").val(values[6]);
-        $("#time-1-7").val(values[7]);
-        $("#time-1-8").val(values[8]);
-        $("#time-1-9").val(values[9]);
-        $("#time-1-K").val(values[10]);
+        $("#time-0").val(values[0]);
+        $("#time-1").val(values[1]);
+        $("#time-2").val(values[2]);
+        $("#time-3").val(values[3]);
+        $("#time-4").val(values[4]);
+        $("#time-5").val(values[5]);
+        $("#time-6").val(values[6]);
+        $("#time-7").val(values[7]);
+        $("#time-8").val(values[8]);
+        $("#time-9").val(values[9]);
+        $("#time-K").val(values[10]);
 
         $("#repetitions").val(values[12]);
 
         $("#tubeboardcount").val(config.tubeBoardCount);
 
         $("#tubeType").val(config.tubeType);
+
+        if(config.counterBurnValue) {
+            $("#burn-0").prop('checked', config.counterBurnValue == '0');
+            $("#burn-1").prop('checked', config.counterBurnValue == '1');
+            $("#burn-2").prop('checked', config.counterBurnValue == '2');
+            $("#burn-3").prop('checked', config.counterBurnValue == '3');
+            $("#burn-4").prop('checked', config.counterBurnValue == '4');
+            $("#burn-5").prop('checked', config.counterBurnValue == '5');
+            $("#burn-6").prop('checked', config.counterBurnValue == '6');
+            $("#burn-7").prop('checked', config.counterBurnValue == '7');
+            $("#burn-8").prop('checked', config.counterBurnValue == '8');
+            $("#burn-9").prop('checked', config.counterBurnValue == '9');
+            $("#burn-K").prop('checked', config.counterBurnValue == '10');
+        } else {
+            $("#burn-0").prop('checked', false);
+            $("#burn-1").prop('checked', false);
+            $("#burn-2").prop('checked', false);
+            $("#burn-3").prop('checked', false);
+            $("#burn-4").prop('checked', false);
+            $("#burn-5").prop('checked', false);
+            $("#burn-6").prop('checked', false);
+            $("#burn-7").prop('checked', false);
+            $("#burn-8").prop('checked', false);
+            $("#burn-9").prop('checked', false);
+            $("#burn-K").prop('checked', false);
+        }
     };
 
     postConfig = function postConfig() {
@@ -227,28 +288,45 @@
         // -------------- General --------------
 
         var counterValues = "";
-        counterValues = counterValues + $("#time-1-0").val() + ";";
-        counterValues = counterValues + $("#time-1-1").val() + ";";
-        counterValues = counterValues + $("#time-1-2").val() + ";";
-        counterValues = counterValues + $("#time-1-3").val() + ";";
-        counterValues = counterValues + $("#time-1-4").val() + ";";
-        counterValues = counterValues + $("#time-1-5").val() + ";";
-        counterValues = counterValues + $("#time-1-6").val() + ";";
-        counterValues = counterValues + $("#time-1-7").val() + ";";
-        counterValues = counterValues + $("#time-1-8").val() + ";";
-        counterValues = counterValues + $("#time-1-9").val() + ";";
-        counterValues = counterValues + $("#time-1-K").val() + ";";
+        counterValues = counterValues + $("#time-0").val() + ";";
+        counterValues = counterValues + $("#time-1").val() + ";";
+        counterValues = counterValues + $("#time-2").val() + ";";
+        counterValues = counterValues + $("#time-3").val() + ";";
+        counterValues = counterValues + $("#time-4").val() + ";";
+        counterValues = counterValues + $("#time-5").val() + ";";
+        counterValues = counterValues + $("#time-6").val() + ";";
+        counterValues = counterValues + $("#time-7").val() + ";";
+        counterValues = counterValues + $("#time-8").val() + ";";
+        counterValues = counterValues + $("#time-9").val() + ";";
+        counterValues = counterValues + $("#time-K").val() + ";";
 
-        counterValues = counterValues + $("#tubetype").val() + ";";
+        counterValues = counterValues + $("#tubeType").val() + ";";
         counterValues = counterValues + $("#repetitions").val() + ";";
 
         postBody["counterValues"] = counterValues;
         postBody["tubeBoardCount"] = $("#tubeboardcount").val();
         postBody["tubeType"] = $("#tubeType").val();
 
+        var counterBurnValue = "";
+        if($("#burn-0").prop('checked') == true) counterBurnValue = "0";
+        if($("#burn-1").prop('checked') == true) counterBurnValue = "1";
+        if($("#burn-2").prop('checked') == true) counterBurnValue = "2";
+        if($("#burn-3").prop('checked') == true) counterBurnValue = "3";
+        if($("#burn-4").prop('checked') == true) counterBurnValue = "4";
+        if($("#burn-5").prop('checked') == true) counterBurnValue = "5";
+        if($("#burn-6").prop('checked') == true) counterBurnValue = "6";
+        if($("#burn-7").prop('checked') == true) counterBurnValue = "7";
+        if($("#burn-8").prop('checked') == true) counterBurnValue = "8";
+        if($("#burn-9").prop('checked') == true) counterBurnValue = "9";
+        if($("#burn-K").prop('checked') == true) counterBurnValue = "10";
+
+        if(counterBurnValue !== "") {
+            postBody["counterBurnValue"] = counterBurnValue;
+        }
+
         // ----------------------------------
 
-        if ($("#tubetype").val() == "0") {
+        if ($("#tubeType").val() == "0") {
             postBody["counterValuesZIN70"] = counterValues;
         } else {
             postBody["counterValuesZIN18"] = counterValues;
@@ -285,6 +363,21 @@
         config.tubeType = $("#tubeType").val();
         setWidgets(config);
     }
+
+    handleBurnClick = function(clickedCheckbox) {
+        var currentlyChecked = $(clickedCheckbox).prop('checked');
+        $("#burn-0").prop('checked', false);
+        $("#burn-1").prop('checked', false);
+        $("#burn-2").prop('checked', false);
+        $("#burn-3").prop('checked', false);
+        $("#burn-4").prop('checked', false);
+        $("#burn-5").prop('checked', false);
+        $("#burn-6").prop('checked', false);
+        $("#burn-7").prop('checked', false);
+        $("#burn-8").prop('checked', false);
+        $("#burn-9").prop('checked', false);
+        $("#burn-K").prop('checked', false);
+        $(clickedCheckbox).prop('checked', currentlyChecked);}
 
     function addLoader() {
         $('body').append('<div style="" id="loadingDiv"><div class="loader">Loading...</div></div>');

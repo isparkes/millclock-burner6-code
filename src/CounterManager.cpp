@@ -223,9 +223,32 @@ void CounterManager_::stopCounter() {
 }
 
 // ************************************************************
+// Stop/pause the counter
+// ************************************************************
+void CounterManager_::setDigit(byte digit) {
+  if(digit == 255) {
+    debugMsgCmg("!!!Inhibit Counter for setting digit to Off");
+    _counterInhibit = false;
+  } else {
+    debugMsgCmg("!!!Set Digit to " + String(digit));
+    _counterInhibit = true;
+    _setDigit = digit;
+  }
+}
+
+// ************************************************************
 // Do a count - called once per second
 // ************************************************************
 void CounterManager_::counterCount() {
+  // if we are in inhibit mode, just set the current count to the set digit
+  if(_counterInhibit) {
+    _currentCount = _setDigit;
+    #ifdef CMG_EXTENDED_DEBUG
+    debugMsgCmg("Counter inhibited.");
+    #endif
+    return;
+  }
+
   if (!_counterRunning) {
     #ifdef CMG_EXTENDED_DEBUG
     debugMsgCmg("Counter not running.");
@@ -276,6 +299,13 @@ bool CounterManager_::isCounterRunning() {
 }
 
 // ************************************************************
+// Is the counter running inhibited?
+// ************************************************************
+bool CounterManager_::isCounterInhibited() {
+  return _counterInhibit;
+}
+
+// ************************************************************
 // Is the counter expired?
 // ************************************************************
 bool CounterManager_::isCounterExpired() {
@@ -319,8 +349,11 @@ String CounterManager_::getCurrentCounterValString() {
   String returnVal = "";
   if (getCurrentCounterVal() < 10) {
     returnVal = String(getCurrentCounterVal());
+  } else if(getCurrentCounterVal() == 10) {
+    returnVal = "K";
   } else {
-    returnVal = "M";
+    debugMsgCmg("Digit value out of rane: " + String(getCurrentCounterVal()));
+    returnVal = "0";
   }
   return returnVal;
 }

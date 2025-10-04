@@ -196,19 +196,12 @@ void setup() {
  
   debugMsgMain("Got board count: " + String(cc->tubeBoardCount));
 
-  counterManager.startCounter();
-
   // -------------------------------------------------------------------------
 
   debugMsgMain("Setup complete");
-  delay(1000);
   digitalWrite(LED_PIN, LOW);
   digitalWrite(IND1Pin, LOW);
   digitalWrite(IND2Pin, LOW);
-  delay(1000);
-  digitalWrite(LED_PIN, HIGH);
-  digitalWrite(IND1Pin, HIGH);
-  digitalWrite(IND2Pin, HIGH);
 
   // -------------------------------------------------------------------------
   
@@ -226,12 +219,15 @@ void performOncePerLoop() {
   // -------------------------------------------------------------------------------
 
   #ifdef FEATURE_MENU
-  menuManager.menuLoop();
+  menuManager.menuOncePerLoop();
   #endif
 
   // -------------------------------------------------------------------------------
 
   wifiManager.manageDNSInOpenAP();
+
+  digitalWrite(IND1Pin, !counterManager.isCounterRunning());
+  digitalWrite(IND2Pin, !(cc->tubeType == ZIN70));
 }
 
 // ************************************************************
@@ -305,6 +301,9 @@ void performOncePerMinuteProcessing() {
   // Usage stats
   cs->uptimeMins++;
 
+  if(counterManager.isCounterInhibited() == false) {
+    debugMsgMain("Digit burn ---> " + counterManager.getCurrentCounterValString());
+  } else
   if (counterManager.isCounterRunning()) {
     debugMsgMain("Counter Running ---> " + counterManager.getCounterValuesCurrent() + " Repetitons: " + String(counterManager.getRepetitionsCurrent()));
   } else {

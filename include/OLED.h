@@ -65,7 +65,6 @@ class OLED_
 
   private:
   bool _blanked;
-    String _timeText = "xx:xx:xx";
     String _bufferLines[6] = {"","","","","",""};
     byte _bufferIdx = 0;
     #ifdef OLED_SSD1306

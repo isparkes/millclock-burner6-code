@@ -126,4 +126,3 @@ void setLedFlashType(byte flashType) {
     }
   }
 }
-

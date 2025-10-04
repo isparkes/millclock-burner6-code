@@ -12,6 +12,7 @@ typedef void (*DebugCallback) (String);
 #define CDM_EXTENDED_DEBUG_OFF
 #define CMG_EXTENDED_DEBUG_OFF
 #define UTL_EXTENDED_DEBUG_OFF
+#define MNM_EXTENDED_DEBUG_OFF
 
 // Basic debug settings
 #ifdef DEBUG
@@ -41,6 +42,12 @@ typedef void (*DebugCallback) (String);
 #define debugMsgSpfX(message) debugManager.debugMsg("[UTL]", message);
 #else
 #define debugMsgSpfX(message)
+#endif
+
+#ifdef MNM_EXTENDED_DEBUG
+#define debugMsgMnmX(message) debugManager.debugMsg("[MNM]", message);
+#else
+#define debugMsgMnmX(message)
 #endif
 
 

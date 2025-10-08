@@ -92,9 +92,10 @@
                 <h3 class="sub-header">Counter Control</h3>
                 <div class="form-horizontal">
                     <div class="btn-group" role="group" aria-label="Basic example">
-                        <button type="button" class="btn btn-primary" onclick="startCounter()">Start</button>
-                        <button type="button" class="btn btn-primary" onclick="stopCounter()">Stop</button>
-                        <button type="button" class="btn btn-primary" onclick="resetCounter()">Reset</button>
+                        <button type="button" class="btn btn-primary" id="startbutton" onclick="startCounter()">Start</button>
+                        <button type="button" class="btn btn-primary" id="stopbutton" onclick="stopCounter()">Stop</button>
+                        <button type="button" class="btn btn-primary" id="resetbutton" onclick="resetCounter()">Reset</button>
+                        <button type="button" class="btn btn-primary" id="pausebutton" onclick="pauseCounter()">Pause</button>
                     </div>
                 </div>
             </div>
@@ -185,7 +186,29 @@
             }
 
             $("#timeRemaining").text(timeString);
+
+            setWidgets(status.counterStatus);
         });
+    };
+
+    setWidgets = function(counterStatus) {
+        // Set button states
+        if (counterStatus === "Running") {
+            $("#startbutton").prop("disabled", true);
+            $("#stopbutton").prop("disabled", false);
+            $("#resetbutton").prop("disabled", false);
+            $("#pausebutton").prop("disabled", false);
+        } else if (counterStatus === "Paused") {
+            $("#startbutton").prop("disabled", false);
+            $("#stopbutton").prop("disabled", false);
+            $("#resetbutton").prop("disabled", false);
+            $("#pausebutton").prop("disabled", true);
+        } else if ((counterStatus === "Stopped") || (counterStatus === "Unknown")) {
+            $("#startbutton").prop("disabled", false);
+            $("#stopbutton").prop("disabled", true);
+            $("#resetbutton").prop("disabled", false);
+            $("#pausebutton").prop("disabled", true);
+        }
     };
 
     var refreshTimer = null;
@@ -250,6 +273,13 @@
     resetCounter = function () {
         addLoader();
         doGet('/api/resetCounter').then(function (config) {
+            removeLoader();
+        }).then(function () { getCounterStatus();});
+    }    
+
+    pauseCounter = function () {
+        addLoader();
+        doGet('/api/pauseCounter').then(function (config) {
             removeLoader();
         }).then(function () { getCounterStatus();});
     }    

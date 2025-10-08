@@ -206,10 +206,6 @@ void getConfigDataHandler(AsyncWebServerRequest *request) {
   root["tubeType"] = cc->tubeType;
   root["tubeBoardCount"] = cc->tubeBoardCount;
 
-  if(counterManager.isCounterInhibited()) {
-    root["counterBurnValue"] = String(counterManager.getCurrentCounterVal());
-  }
-
   root.printTo(*response);
   request->send(response);
 }
@@ -319,18 +315,6 @@ void postConfigDataHandler(AsyncWebServerRequest *request) {
       counterManager.setTubeType(tube_type_t(cc->tubeType));
     }
 
-    if(checkPresence(json,"counterBurnValue")) {
-      String newBurnValue = json["counterBurnValue"];
-      int newBurnValueInt = newBurnValue.toInt();
-      debugMsgUtl("New burn value int: " + String(newBurnValueInt));
-      counterManager.setDigit(newBurnValueInt); // Force the first digit to be set
-    } else {
-      debugMsgUtl("Resetting burn value");
-      if (counterManager.isCounterInhibited()) {
-        counterManager.setDigit(255);
-      }
-    }
-  
     // ------------------------------------------------------------
 
     spiffsStorage.saveConfigToSpiffs();
@@ -574,6 +558,15 @@ void resetCounterHandler(AsyncWebServerRequest *request) {
 }
 
 // ************************************************************
+// Pause the counter
+// ************************************************************
+void pauseCounterHandler(AsyncWebServerRequest *request) {
+  debugMsgUtl("Got counter pause request");
+  counterManager.pauseCounter();
+  request->send(200, "text/json", "{\"status\": \"Counter paused\"}");
+}
+
+// ************************************************************
 // Reset the counter
 // ************************************************************
 void counterStatusHandler(AsyncWebServerRequest *request) {
@@ -587,15 +580,15 @@ void counterStatusHandler(AsyncWebServerRequest *request) {
   int repetitions = counterManager.getRepetitionsCurrent();
   String counterStatus = "Unknown";
   if (counterManager.isCounterRunning()) {
-    counterStatus = "Running";
+    if(counterManager.isCounterPaused()) {
+      counterStatus = "Paused";
+    } else {
+      counterStatus = "Running";
+    }
   } else if (counterManager.isCounterExpired()) {
     counterStatus = "Finished";
   } else {
     counterStatus = "Stopped";
-  }
-
-  if (counterManager.isCounterInhibited()) {
-    counterStatus += " / Single Digit Mode";
   }
 
   request->send(200, "text/json", "{\"tubeType\": \"" + tubeTypeString + "\", \"counterValuesCurrent\": \"" + counterValuesCurrent + "\", \"counterValuesInitial\": \"" + counterValuesInitial + "\", \"repetitions\": \"" + String(repetitions) + "\", \"counterStatus\": \"" + counterStatus + "\"}");

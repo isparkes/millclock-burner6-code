@@ -8,9 +8,9 @@
 #include "WiFiManager.h"
 #include "Globals.h"
 
-#define BUTTONPRESSEDSTATE 0              // rotary encoder gpio pin logic level when the button is pressed (usually 0)
-#define DEBOUNCEDELAY 100                 // debounce delay for button inputs
-#define maxmenuItems 15                   // max number of items used in any of the menus (keep as low as possible to save memory)
+#define BUTTONPRESSEDSTATE   0            // rotary encoder gpio pin logic level when the button is pressed (usually 0)
+#define DEBOUNCEDELAY        100          // debounce delay for button inputs
+#define MENU_ITEMS           18           // max number of items used in any of the menus (keep as low as possible to save memory)
 
 #define OLED_ON_ALWAYS       0            // 
 #define OLED_ON_SHORT        1            // 
@@ -31,7 +31,6 @@ enum menuTargets {
   // Move around in menus
   backToMain,
   gotoBurnMenu,
-  gotoSingleBurnMenu,
   backToBurn,
   gotoWifiMenu,
   gotoOptionsMenu,
@@ -58,7 +57,32 @@ enum menuTargets {
   stopBurn,
   startBurn,
   resetBurn,
-  setDigit,
+  setDigit0,
+  setDigit1,
+  setDigit2,
+  setDigit3,
+  setDigit4,
+  setDigit5,
+  setDigit6,
+  setDigit7,
+  setDigit8,
+  setDigit9,
+  setDigitK,
+  saveDigit0,
+  saveDigit1,
+  saveDigit2,
+  saveDigit3,
+  saveDigit4,
+  saveDigit5,
+  saveDigit6,
+  saveDigit7,
+  saveDigit8,
+  saveDigit9,
+  saveDigitK,
+  setCyclesValue,
+  saveCyclesValue,
+  saveDigitValues,
+  pauseBurn,
 
   // System options
   restartClock,
@@ -82,8 +106,8 @@ struct oledMenus {
   byte noOfmenuItems = 0;                   // number if menu items in the active menu
   byte selectedMenuItem = 0;                // when a menu item is selected it is flagged here until actioned and cleared
   byte highlightedMenuItem = 0;             // which item is curently highlighted in the menu
-  String menuItems[maxmenuItems+1];         // store for the menu item titles
-  menuTargets menuActions[maxmenuItems+1];  // The action to carry out
+  String menuItems[MENU_ITEMS+1];           // store for the menu item titles
+  menuTargets menuActions[MENU_ITEMS+1];    // The action to carry out
   uint32_t lastMenuActivity = 0;            // time the menu last saw any activity (used for timeout)
 
   // 'enter a value'
@@ -158,7 +182,6 @@ class MenuManager_ {
     // Menus
     void mainMenu();
     void burnMenu();
-    void burnSingleDigitMenu();
     void wifiMenu();
     void systemMenu();
     void nixieClockMenu();
@@ -168,9 +191,7 @@ class MenuManager_ {
     void locationMenu();
 
     void menuActions(menuTargets selectedAction);
-    void setDimmingValue(menuTargets target);
-    void setHourValue(String title, byte startValue, menuTargets target);
-    void setMinuteValue(menuTargets target);
+    void setIntegerValue(String title, int startValue, int minValue, int maxValue, menuTargets target);
     void setStringValue(String title, menuTargets target, String intialValue);
 
     void serviceMenu();

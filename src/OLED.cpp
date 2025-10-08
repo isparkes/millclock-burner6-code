@@ -112,10 +112,12 @@ void OLED_::drawWiFiInd() {
 
 void OLED_::drawRunInd() {
   _display->setCursor(RUN_IND_X,STATUS_LINE_Y);
-  if(counterManager.isCounterInhibited()) {
-    _display->print("I");
-  } else if (counterManager.isCounterRunning()) {
-    _display->print("R");
+  if (counterManager.isCounterRunning()) {
+    if(counterManager.isCounterPaused()) {
+      _display->print("P");
+    } else {
+      _display->print("R");
+    }
   } else {
     _display->print("-");
   }
@@ -146,22 +148,15 @@ void OLED_::drawTubeTypeInd() {
 // --------------------------------------------------
 
 void OLED_::drawValueInd() {
-  if(counterManager.isCounterInhibited()) {
-    _display->setCursor(VAL_IND_X,STATUS_LINE_Y);
-    _display->print(" >>> " + counterManager.getCurrentCounterValString() + " <<<");
-  } else {
-    _display->setCursor(VAL_IND_X,STATUS_LINE_Y);
-    _display->print("V:" + counterManager.getCurrentCounterValString() + ":" + String(counterManager.getSecondsRemainingCurrentValue()));
-    }
+  _display->setCursor(VAL_IND_X,STATUS_LINE_Y);
+  _display->print("V:" + counterManager.getCurrentCounterValString() + ":" + String(counterManager.getSecondsRemainingCurrentValue()));
 }
 
 // --------------------------------------------------
 
 void OLED_::drawRepetitionsInd() {
-  if(!counterManager.isCounterInhibited()) {
-    _display->setCursor(REP_IND_X,STATUS_LINE_Y);
-    _display->print("R:" + String(counterManager.getRepetitionsCurrent()));
-  }
+  _display->setCursor(REP_IND_X,STATUS_LINE_Y);
+  _display->print("R:" + String(counterManager.getRepetitionsCurrent()));
 }
 
 // ************************************************************

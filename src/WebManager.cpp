@@ -31,6 +31,7 @@ void WebManager_::begin() {
   server.on("/api/startCounter", HTTP_GET, startCounterHandler);
   server.on("/api/stopCounter", HTTP_GET, stopCounterHandler);
   server.on("/api/resetCounter", HTTP_GET, resetCounterHandler);
+  server.on("/api/pauseCounter", HTTP_GET, pauseCounterHandler);
   server.on("/api/counterStatus", HTTP_GET, counterStatusHandler);
 
   // Utilities

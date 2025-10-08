@@ -31,8 +31,10 @@ void IRAM_ATTR btn2ISR() {
 void setup() {
   // Show that we booted - useful for remote debugging
   pinMode(LED_PIN, OUTPUT);
+
   pinMode(IND1Pin, OUTPUT);
   pinMode(IND2Pin, OUTPUT);
+  
   pinMode(BUZZER_PIN, OUTPUT);
 
   playTune();
@@ -58,15 +60,6 @@ void setup() {
   pinMode(DATAPin, OUTPUT);
   pinMode(LATCHPin, OUTPUT);
   pinMode(BLANKPin, OUTPUT);
-
-  // for (int i = 0; i < 200; i++) {
-  //   bool state = (i % 2) == 0;
-  //   digitalWrite(DATAPin, state);
-  //   digitalWrite(CLKPin, state);
-  //   digitalWrite(LATCHPin, state);
-  //   digitalWrite(BLANKPin, state);
-  //   delay(10);
-  // }
 
   pinMode(BTN1Pin, INPUT_PULLUP);
   pinMode(BTN2Pin, INPUT_PULLUP);
@@ -240,6 +233,7 @@ void performOncePerSecondProcessing() {
   // -------------------------------------------------------------------------------
   
   counterManager.counterCount();
+
   outputManager.loadNumberIntegerValue(counterManager.getCurrentCounterVal());
 //  debugMsgMain("Counter value from manager: " + String(counterManager.getCurrentCounterVal()));
   outputManager.updateOncePerSecond();
@@ -290,6 +284,10 @@ void performOncePerSecondProcessing() {
 
   // -------------------------------------------------------------------------------
 
+  outputManager.setBlanked(counterManager.isCounterRunning() == false);
+
+  // -------------------------------------------------------------------------------
+
   feedWatchdog();
 }
 
@@ -301,9 +299,6 @@ void performOncePerMinuteProcessing() {
   // Usage stats
   cs->uptimeMins++;
 
-  if(counterManager.isCounterInhibited() == false) {
-    debugMsgMain("Digit burn ---> " + counterManager.getCurrentCounterValString());
-  } else
   if (counterManager.isCounterRunning()) {
     debugMsgMain("Counter Running ---> " + counterManager.getCounterValuesCurrent() + " Repetitons: " + String(counterManager.getRepetitionsCurrent()));
   } else {

@@ -57,6 +57,7 @@ void saveStatsHandler(AsyncWebServerRequest *request);
 void startCounterHandler(AsyncWebServerRequest *request);
 void stopCounterHandler(AsyncWebServerRequest *request);
 void resetCounterHandler(AsyncWebServerRequest *request);
+void pauseCounterHandler(AsyncWebServerRequest *request);
 void counterStatusHandler(AsyncWebServerRequest *request);
 
 void restartHandler(AsyncWebServerRequest *request);

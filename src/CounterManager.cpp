@@ -53,7 +53,8 @@ void CounterManager_::copyInitialRepetitionsToCurrent() {
 // ************************************************************
 void CounterManager_::setTubeType(tube_type_t newType) {
   _currentTubeType = newType;
-
+  copyInitialArrayToCurrent();
+  copyInitialRepetitionsToCurrent();
 }
 
 // ************************************************************
@@ -140,7 +141,7 @@ config_set_t CounterManager_::parseConfigString(String inputString) {
 }
 
 // ************************************************************
-// Set and parse the counter values from the separated string
+// Rebuild the counter values string from the current config
 // ************************************************************
 String CounterManager_::getCounterValues(tube_type_t tubeType) {
   String _counterValues = "";
@@ -177,6 +178,71 @@ int CounterManager_::getRepetitions() {
 }
 
 // ************************************************************
+// Set the repetition value
+// ************************************************************
+void CounterManager_::setRepetitions(int newRepetitions) {
+  config_set_t currentConfigSet = getCurrentConfigSet();
+  
+  switch (_currentTubeType)
+  {
+  case ZIN70:
+  default:
+    configZIN70.repetitions = newRepetitions;
+    break;
+  case ZIN18:
+    configZIN18.repetitions = newRepetitions;
+    break;
+  }
+}
+
+// ************************************************************
+// Get a single digit value duration
+// ************************************************************
+int CounterManager_::getDigitTime(int digit) {
+  config_set_t currentConfigSet = getCurrentConfigSet();
+
+  if ((digit < 0) || (digit >= VALUES_PER_DIGIT)) {
+    debugMsgCmg("Digit index out of range: " + String(digit));
+    digit = 0;  // return the first one
+  }
+  return currentConfigSet.digitTime[digit];
+}
+
+// ************************************************************
+// Set a single digit value duration
+// ************************************************************
+void CounterManager_::setDigitTime(int digit, int newDuration) {
+  if ((digit < 0) || (digit >= VALUES_PER_DIGIT)) {
+    debugMsgCmg("Digit index out of range: " + String(digit));
+    return;
+  }
+  debugMsgCmg("Set digit: " + String(digit) + " to duration: " + String(newDuration));
+  switch (_currentTubeType)
+  {
+  case ZIN70:
+  default:
+    configZIN70.digitTime[digit] = newDuration;
+    break;
+  case ZIN18:
+    configZIN18.digitTime[digit] = newDuration;
+    break;
+  }
+
+  copyInitialArrayToCurrent();
+}
+
+// ************************************************************
+// Get a single digit value duration
+// ************************************************************
+int CounterManager_::getDigitCount() {
+  if (_currentTubeType == ZIN70) {
+    return VALUES_PER_DIGIT;
+  } else {
+    return VALUES_PER_DIGIT - 1;
+  }
+}
+
+// ************************************************************
 // Set and parse the counter values from the separated string
 // ************************************************************
 String CounterManager_::getCounterValuesCurrent() {
@@ -200,6 +266,7 @@ int CounterManager_::getRepetitionsCurrent() {
 void CounterManager_::startCounter() {
   debugMsgCmg("!!!Starting Counter");
   _counterRunning = true;
+  _counterPaused = false;
 }
 
 // ************************************************************
@@ -212,44 +279,31 @@ void CounterManager_::resetCounter() {
   _counterRunning = true;
   _counterDone = false;
   _counterDoneConfirmed = false;
+  _counterPaused = false;
 }
 
 // ************************************************************
-// Stop/pause the counter
+// Stop the counter
 // ************************************************************
 void CounterManager_::stopCounter() {
   debugMsgCmg("!!!Stopping Counter");
   _counterRunning = false;
+  _counterPaused = false;
 }
 
 // ************************************************************
-// Stop/pause the counter
+// Pause the counter
 // ************************************************************
-void CounterManager_::setDigit(byte digit) {
-  if(digit == 255) {
-    debugMsgCmg("!!!Inhibit Counter for setting digit to Off");
-    _counterInhibit = false;
-  } else {
-    debugMsgCmg("!!!Set Digit to " + String(digit));
-    _counterInhibit = true;
-    _setDigit = digit;
-  }
+void CounterManager_::pauseCounter() {
+  debugMsgCmg("!!!Pausing Counter");
+  _counterPaused = true;
 }
 
 // ************************************************************
 // Do a count - called once per second
 // ************************************************************
 void CounterManager_::counterCount() {
-  // if we are in inhibit mode, just set the current count to the set digit
-  if(_counterInhibit) {
-    _currentCount = _setDigit;
-    #ifdef CMG_EXTENDED_DEBUG
-    debugMsgCmg("Counter inhibited.");
-    #endif
-    return;
-  }
-
-  if (!_counterRunning) {
+  if ((!_counterRunning) || (_counterPaused)) {
     #ifdef CMG_EXTENDED_DEBUG
     debugMsgCmg("Counter not running.");
     #endif
@@ -299,13 +353,6 @@ bool CounterManager_::isCounterRunning() {
 }
 
 // ************************************************************
-// Is the counter running inhibited?
-// ************************************************************
-bool CounterManager_::isCounterInhibited() {
-  return _counterInhibit;
-}
-
-// ************************************************************
 // Is the counter expired?
 // ************************************************************
 bool CounterManager_::isCounterExpired() {
@@ -317,6 +364,13 @@ bool CounterManager_::isCounterExpired() {
 // ************************************************************
 bool CounterManager_::isCounterExpiredConfirmed() {
   return _counterDoneConfirmed;
+}
+
+// ************************************************************
+// Is the counter paused?
+// ************************************************************
+bool CounterManager_::isCounterPaused() {
+  return _counterPaused;
 }
 
 // ************************************************************

@@ -31,38 +31,47 @@ void MenuManager_::burnMenu() {
 
   oledMenu.menuTitle = "Burn Menu";
 
-  if(counterManager.isCounterInhibited()) {
-  } else
   if(counterManager.isCounterRunning()) {
-    oledMenu.menuItems[menuCount] = "Stop Burn";       oledMenu.menuActions[menuCount++] = stopBurn;
-    oledMenu.menuItems[menuCount] = "Reset Burn";      oledMenu.menuActions[menuCount++] = resetBurn;
+    oledMenu.menuItems[menuCount] = "Stop Burn";                                            oledMenu.menuActions[menuCount++] = stopBurn;
+    oledMenu.menuItems[menuCount] = "Reset Burn";                                           oledMenu.menuActions[menuCount++] = resetBurn;
+    if(counterManager.isCounterPaused()) {
+      oledMenu.menuItems[menuCount] = "Resume Burn";                                        oledMenu.menuActions[menuCount++] = startBurn;
+    } else {
+      oledMenu.menuItems[menuCount] = "Pause Burn";                                         oledMenu.menuActions[menuCount++] = pauseBurn;
+    }
   } else {
-    oledMenu.menuItems[menuCount] = "Start Burn";      oledMenu.menuActions[menuCount++] = startBurn;
+    oledMenu.menuItems[menuCount] = "Start Burn";                                           oledMenu.menuActions[menuCount++] = startBurn;
     String tubeType = cc->tubeType == ZIN70 ? "ZIN70" : "ZIN18";
-    oledMenu.menuItems[menuCount] = "Tube " + tubeType;oledMenu.menuActions[menuCount++] = toggleTubeType;
+    oledMenu.menuItems[menuCount] = "Tube " + tubeType;                                     oledMenu.menuActions[menuCount++] = toggleTubeType;
   }
-  oledMenu.menuItems[menuCount] = "Heat Digit";      oledMenu.menuActions[menuCount++] = gotoSingleBurnMenu;
-  oledMenu.menuItems[menuCount] = "Back";            oledMenu.menuActions[menuCount++] = backToMain;
-  oledMenu.noOfmenuItems = --menuCount;
-}
-
-// ************************************************************
-// Burn Single Digit Menu
-// ************************************************************
-void MenuManager_::burnSingleDigitMenu() {
-  resetMenu();
-  byte menuCount = 1;
-  menuMode = menu;
-
-  oledMenu.menuTitle = "Single Burn Menu";
-  for (byte i=0; i<10; i++) {
-    oledMenu.menuItems[menuCount] = String(i);       oledMenu.menuActions[menuCount++] = setDigit;
-  }
+  String menuEntry = "Set Digit 0: " + String(counterManager.getDigitTime(0));
+  oledMenu.menuItems[menuCount] = menuEntry;                                                oledMenu.menuActions[menuCount++] = setDigit0;
+  menuEntry = "Set Digit 1: " + String(counterManager.getDigitTime(1));
+  oledMenu.menuItems[menuCount] = menuEntry;                                                oledMenu.menuActions[menuCount++] = setDigit1;
+  menuEntry = "Set Digit 2: " + String(counterManager.getDigitTime(2));
+  oledMenu.menuItems[menuCount] = menuEntry;                                                oledMenu.menuActions[menuCount++] = setDigit2;
+  menuEntry = "Set Digit 3: " + String(counterManager.getDigitTime(3));
+  oledMenu.menuItems[menuCount] = menuEntry;                                                oledMenu.menuActions[menuCount++] = setDigit3;
+  menuEntry = "Set Digit 4: " + String(counterManager.getDigitTime(4));
+  oledMenu.menuItems[menuCount] = menuEntry;                                                oledMenu.menuActions[menuCount++] = setDigit4;
+  menuEntry = "Set Digit 5: " + String(counterManager.getDigitTime(5));
+  oledMenu.menuItems[menuCount] = menuEntry;                                                oledMenu.menuActions[menuCount++] = setDigit5;
+  menuEntry = "Set Digit 6: " + String(counterManager.getDigitTime(6));
+  oledMenu.menuItems[menuCount] = menuEntry;                                                oledMenu.menuActions[menuCount++] = setDigit6;
+  menuEntry = "Set Digit 7: " + String(counterManager.getDigitTime(7));
+  oledMenu.menuItems[menuCount] = menuEntry;                                                oledMenu.menuActions[menuCount++] = setDigit7;
+  menuEntry = "Set Digit 8: " + String(counterManager.getDigitTime(8));
+  oledMenu.menuItems[menuCount] = menuEntry;                                                oledMenu.menuActions[menuCount++] = setDigit8;
+  menuEntry = "Set Digit 9: " + String(counterManager.getDigitTime(9));
+  oledMenu.menuItems[menuCount] = menuEntry;                                                oledMenu.menuActions[menuCount++] = setDigit9;
   if (cc->tubeType == ZIN70) {
-    oledMenu.menuItems[menuCount] = "10";            oledMenu.menuActions[menuCount++] = setDigit;
+    menuEntry = "Set Digit K: " + String(counterManager.getDigitTime(10));
+    oledMenu.menuItems[menuCount] = menuEntry;                                                oledMenu.menuActions[menuCount++] = setDigitK;
   }
-  oledMenu.menuItems[menuCount] = "Off ";            oledMenu.menuActions[menuCount++] = setDigit;
-  oledMenu.menuItems[menuCount] = "Back";            oledMenu.menuActions[menuCount++] = backToBurn;
+
+  oledMenu.menuItems[menuCount] = "Cycles: " + String(counterManager.getRepetitions());     oledMenu.menuActions[menuCount++] = setCyclesValue;
+  oledMenu.menuItems[menuCount] = "Save";                                                   oledMenu.menuActions[menuCount++] = saveDigitValues;
+  oledMenu.menuItems[menuCount] = "Back";                                                   oledMenu.menuActions[menuCount++] = backToMain;
   oledMenu.noOfmenuItems = --menuCount;
 }
 
@@ -127,7 +136,7 @@ void MenuManager_::wifiSelectMenu() {
 
   oledMenu.menuTitle = "Select network";
 
-  int numberOfEntries = wifiManager.getLastScanResultCount() < maxmenuItems ? wifiManager.getLastScanResultCount() : maxmenuItems;
+  int numberOfEntries = wifiManager.getLastScanResultCount() < MENU_ITEMS ? wifiManager.getLastScanResultCount() : MENU_ITEMS;
   
   // Leave some room for the "Back" option
   numberOfEntries--;
@@ -172,8 +181,9 @@ void MenuManager_::menuActions(menuTargets selectedAction) {
       burnMenu();
       break;
     }
-    case gotoSingleBurnMenu: {
-      burnSingleDigitMenu();
+    case pauseBurn: {
+      counterManager.pauseCounter();
+      burnMenu();
       break;
     }
     case gotoWifiMenu: {
@@ -225,14 +235,118 @@ void MenuManager_::menuActions(menuTargets selectedAction) {
       burnMenu();
       break;
     }
-    case setDigit: {
-      debugMsgMnm("Got digit: " + getMenuOptionSelectedText());
-      if (getMenuOptionSelectedText().equals("Off ")) {
-        counterManager.setDigit(255);  // special code to turn off heating
-      } else {
-        byte setDigit = getMenuOptionSelectedText().toInt();
-        counterManager.setDigit(setDigit);
-      }
+    case setDigit0: {
+      setIntegerValue("Digit 0", counterManager.getDigitTime(0), 0, 999, saveDigit0);
+      break;
+    }
+    case saveDigit0: {
+      counterManager.setDigitTime(0, oledMenu.mValueEntered);
+      burnMenu();
+      break;
+    } 
+    case setDigit1: {
+      setIntegerValue("Digit 1", counterManager.getDigitTime(1), 0, 999, saveDigit0);
+      break;
+    }
+    case saveDigit1: {
+      counterManager.setDigitTime(1, oledMenu.mValueEntered);
+      burnMenu();
+      break;
+    }
+    case setDigit2: {
+      setIntegerValue("Digit 2", counterManager.getDigitTime(2), 0, 999, saveDigit2);
+      break;
+    }
+    case saveDigit2: {
+      counterManager.setDigitTime(2, oledMenu.mValueEntered);
+      burnMenu();
+      break;
+    }
+    case setDigit3: {
+      setIntegerValue("Digit 3", counterManager.getDigitTime(3), 0, 999, saveDigit3);
+      break;
+    }
+    case saveDigit3: {
+      counterManager.setDigitTime(3, oledMenu.mValueEntered);
+      burnMenu();
+      break;
+    }
+    case setDigit4: {
+      setIntegerValue("Digit 4", counterManager.getDigitTime(4), 0, 999, saveDigit4);
+      break;
+    }
+    case saveDigit4: {
+      counterManager.setDigitTime(4, oledMenu.mValueEntered);
+      burnMenu();
+      break;
+    }
+    case setDigit5: {
+      setIntegerValue("Digit 5", counterManager.getDigitTime(5), 0, 999, saveDigit5);
+      break;
+    }
+    case saveDigit5: {
+      counterManager.setDigitTime(5, oledMenu.mValueEntered);
+      burnMenu();
+      break;
+    }
+    case setDigit6: {
+      setIntegerValue("Digit 6", counterManager.getDigitTime(6), 0, 999, saveDigit6);
+      break;
+    }
+    case saveDigit6: {
+      counterManager.setDigitTime(6, oledMenu.mValueEntered);
+      burnMenu();
+      break;
+    }
+    case setDigit7: {
+      setIntegerValue("Digit 7", counterManager.getDigitTime(7), 0, 999, saveDigit7);
+      break;
+    }
+    case saveDigit7: {
+      counterManager.setDigitTime(7, oledMenu.mValueEntered);
+      burnMenu();
+      break;
+    }
+    case setDigit8: {
+      setIntegerValue("Digit 8", counterManager.getDigitTime(8), 0, 999, saveDigit8);
+      break;
+    }
+    case saveDigit8: {
+      counterManager.setDigitTime(8, oledMenu.mValueEntered);
+      burnMenu();
+      break;
+    }
+    case setDigit9: {
+      setIntegerValue("Digit 9", counterManager.getDigitTime(9), 0, 999, saveDigit9);
+      break;
+    }
+    case saveDigit9: {
+      counterManager.setDigitTime(9, oledMenu.mValueEntered);
+      burnMenu();
+      break;
+    }
+    case setDigitK: {
+      setIntegerValue("Digit K", counterManager.getDigitTime(10), 0, 999, saveDigitK);
+      break;
+    }
+    case saveDigitK: {
+      counterManager.setDigitTime(10, oledMenu.mValueEntered);
+      burnMenu();
+      break;
+    }
+    case setCyclesValue: {
+      setIntegerValue("Cycles", counterManager.getRepetitionsCurrent(), 1, 99, saveCyclesValue);
+      break;
+    }
+    case saveCyclesValue: {
+      counterManager.setRepetitions(oledMenu.mValueEntered);
+      burnMenu();
+      break;
+    }
+    case saveDigitValues: {
+      cc->counterValuesZIN70 = counterManager.getCounterValues(ZIN70);
+      cc->counterValuesZIN18 = counterManager.getCounterValues(ZIN18);
+      spiffsStorage.saveConfigToSpiffs();
       burnMenu();
       break;
     }
@@ -356,6 +470,20 @@ void MenuManager_::setStringValue(String title, menuTargets target, String initi
   oledMenu.mValueEntered = 0;            // starting value
   oledMenu.nextTarget = target;          // action to call when button pressed
   oledMenu.enteredString = initialValue;
+}
+
+// ************************************************************
+// Set up an integer on the display for entry
+// ************************************************************
+void MenuManager_::setIntegerValue(String title, int startValue, int min, int max, menuTargets target) {
+  resetMenu();                           // clear any previous menu
+  menuMode = value;                      // enable value entry
+  oledMenu.menuTitle = title;            // title (used to identify which number was entered)
+  oledMenu.mValueLow = min;              // minimum value allowed
+  oledMenu.mValueHigh = max;             // maximum value allowed
+  oledMenu.mValueStep = 1;               // step size
+  oledMenu.mValueEntered = startValue;   // starting value
+  oledMenu.nextTarget = target;          // action to call when button pressed
 }
 
 // ************************************************************

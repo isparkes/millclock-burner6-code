@@ -99,6 +99,14 @@ void setup() {
     spiffsStorage.saveConfigToSpiffs();
   }
 
+  
+  // -------------------------------------------------------------------------
+
+  debugMsgMain("Setup complete");
+  digitalWrite(LED_PIN, LOW);
+  digitalWrite(IND1Pin, LOW);
+  digitalWrite(IND2Pin, LOW);
+
   // -------------------------------------------------------------------------
 
   debugMsgMain("Start up Timers");
@@ -116,14 +124,6 @@ void setup() {
     outputManager.outputDisplay();
     delay(100);
   }
-
-  // // -------------------------------------------------------------------------
-  // // First start bit test
-  // debugMsgMain("Startup bit test");
-  // for (int i = 0 ; i < 32 ; i++) {
-  //   dispVal = (1 << i);
-  //   delay(100);
-  // }
 
   // -------------------------------------------------------------------------
   
@@ -189,17 +189,15 @@ void setup() {
  
   debugMsgMain("Got board count: " + String(cc->tubeBoardCount));
 
-  // -------------------------------------------------------------------------
-
-  debugMsgMain("Setup complete");
-  digitalWrite(LED_PIN, LOW);
-  digitalWrite(IND1Pin, LOW);
-  digitalWrite(IND2Pin, LOW);
 
   // -------------------------------------------------------------------------
   
   // Set the initial state of the display
   outputManager.setBlanked(false);
+
+  // -------------------------------------------------------------------------
+  
+  debugMsgMain("Setup complete");
 }
 
 // ************************************************************
@@ -220,7 +218,7 @@ void performOncePerLoop() {
   wifiManager.manageDNSInOpenAP();
 
   digitalWrite(IND1Pin, !counterManager.isCounterRunning());
-  digitalWrite(IND2Pin, !(cc->tubeType == ZIN70));
+  digitalWrite(IND2Pin, !counterManager.isCounterPaused());
 }
 
 // ************************************************************

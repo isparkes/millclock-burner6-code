@@ -467,7 +467,7 @@ void MenuManager_::flashMenuMessage(String heading, String message) {
 } 
 
 // ************************************************************
-// Flash a message to the display
+// Cancel a Flash message
 // ************************************************************
 void MenuManager_::clearFlashMenuMessage() {
   countdownMenuTimeouts(clearFlashTimeout);
@@ -483,30 +483,6 @@ void MenuManager_::scrollMenuMessage(String message) {
     oled.showScrollingMessage(message);
   }
 } 
-
-// ************************************************************
-// Button debounce (rotary encoder)
-// ************************************************************
-void MenuManager_::reUpdateButton() {
-    bool tReading = digitalRead(ENC_BTN);               // read current button state
-    if (tReading != rotaryEncoder.encoderPrevButton) rotaryEncoder.reLastButtonChange = nowMillis;     // if it has changed reset timer
-    if ( (unsigned long)(nowMillis - rotaryEncoder.reLastButtonChange) > rotaryEncoder.reDebounceDelay ) {  // if button state is stable
-      if (rotaryEncoder.encoderPrevButton == rotaryEncoder.reButtonPressedState) {
-        if (rotaryEncoder.reButtonDebounced == 0) {     // if the button has been pressed
-          rotaryEncoder.reButtonPressed = 1;            // flag set when the button has been pressed
-        }
-        rotaryEncoder.reButtonDebounced = 1;            // debounced button status  (1 when pressed)
-      } else {
-        rotaryEncoder.reButtonDebounced = 0;
-      }
-    }
-
-    if (rotaryEncoder.reButtonDebounced == 1) {
-      resetTimeouts();
-    }
-
-    rotaryEncoder.encoderPrevButton = tReading;         // update last state read
-}
 
 // ************************************************************
 // Set up a string on the display for entry
@@ -543,25 +519,35 @@ void MenuManager_::setIntegerValue(String title, int startValue, int min, int ma
 // ************************************************************
 void MenuManager_::serviceRootMenu() {
   bool doToggle = false;
-  if (rotaryEncoder.encoder0Pos >= TICKS_PER_MOVE) {
-    rotaryEncoder.encoder0Pos -= TICKS_PER_MOVE;
-    oledMenu.lastMenuActivity = nowMillis;
+
+  if (getEncoderCCW()) {
     doToggle = true;
   }
-  if (rotaryEncoder.encoder0Pos <= -TICKS_PER_MOVE) {
-    rotaryEncoder.encoder0Pos += TICKS_PER_MOVE;
-    oledMenu.lastMenuActivity = nowMillis;
+
+  if (getEncoderCW()) {
     doToggle = true;
   }
   
-  if (rotaryEncoder.reButtonPressed == 1) {
-    mainMenu();
-    rotaryEncoder.reButtonPressed = 0;
-  }
-
-  if (doToggle) {
-    counterManager.toggleTubeType();
-    cc->tubeType = counterManager.getTubeType();
+  if (counterManager.isCounterRunning()) {
+    // When we are running, pressing the encoder pauses the counter
+    if (readUnhandledEncoderPress()) {
+      if (!counterManager.isCounterPaused()) {
+        counterManager.pauseCounter();
+      } else {
+        counterManager.startCounter();
+      }
+    }
+  } else {
+    // When we are not running, pressing the encoder undoes the pause or takes us to the main menu
+    if (readUnhandledEncoderPress()) {
+      mainMenu();
+    }
+  
+    // Only change the tube type if the counter is not running
+    if (doToggle) {
+      counterManager.toggleTubeType();
+      cc->tubeType = counterManager.getTubeType();
+    }
   }
 
   oled.setTextSize(1);
@@ -582,20 +568,17 @@ void MenuManager_::serviceRootMenu() {
 // When we are in a menu, do the actions needed to service it
 // ************************************************************
 void MenuManager_::serviceMenu() {
-  if (rotaryEncoder.encoder0Pos >= TICKS_PER_MOVE) {
-    rotaryEncoder.encoder0Pos -= TICKS_PER_MOVE;
+  if (getEncoderCCW()) {
     oledMenu.highlightedMenuItem++;
-    oledMenu.lastMenuActivity = nowMillis;
-    oledMenu.needUpdate = true;
-  }
-  if (rotaryEncoder.encoder0Pos <= -TICKS_PER_MOVE) {
-    rotaryEncoder.encoder0Pos += TICKS_PER_MOVE;
-    oledMenu.highlightedMenuItem--;
-    oledMenu.lastMenuActivity = nowMillis;
     oledMenu.needUpdate = true;
   }
 
-  if (rotaryEncoder.reButtonPressed == 1) {
+  if (getEncoderCW()) {
+    oledMenu.highlightedMenuItem--;
+    oledMenu.needUpdate = true;
+  }
+
+  if (readUnhandledEncoderPress()) {
     oledMenu.selectedMenuItem = oledMenu.highlightedMenuItem;
     oledMenu.lastMenuActivity = nowMillis;
     oledMenu.needUpdate = true;
@@ -643,24 +626,13 @@ void MenuManager_::serviceMenu() {
 // Service value entry
 // ************************************************************
 void MenuManager_::serviceValue() {
-  // If we timed out, just reset
-  if (configTimeout == 0) {
-    resetMenu();
-  }
-
-  // ---------------------------------------------------------------------- 
-  // adjust value based on encoder movement, reduce the sensitvity so it takes several 'ticks' to move the value by one step
-  if (rotaryEncoder.encoder0Pos >= TICKS_PER_MOVE) {
-    rotaryEncoder.encoder0Pos -= TICKS_PER_MOVE;
-    oledMenu.mValueEntered-= oledMenu.mValueStep;
-    oledMenu.lastMenuActivity = nowMillis;
+  if (getEncoderCCW()) {
+    oledMenu.mValueEntered -= oledMenu.mValueStep;
     oledMenu.needUpdate = true;
   }
 
-  if (rotaryEncoder.encoder0Pos <= -TICKS_PER_MOVE) {
-    rotaryEncoder.encoder0Pos += TICKS_PER_MOVE;
+  if (getEncoderCW()) {
     oledMenu.mValueEntered+= oledMenu.mValueStep;
-    oledMenu.lastMenuActivity = nowMillis;
     oledMenu.needUpdate = true;
   }
 
@@ -830,51 +802,12 @@ void MenuManager_::displayMessage(String _title, String _message) {
 // ************************************************************
 void MenuManager_::resetMenu() {
   oledMenu.selectedMenuItem = noTarget;
-  rotaryEncoder.encoder0Pos = 0;
   oledMenu.noOfmenuItems = 0;
   oledMenu.menuTitle = "";
   oledMenu.highlightedMenuItem = 0;
   oledMenu.mValueEntered = 0;
-  rotaryEncoder.reButtonPressed = 0;
 
   oledMenu.lastMenuActivity = nowMillis;
-
-//  oled.blankDisplay();
-}
-
-
-// ************************************************************
-//                     -interrupt for rotary encoder
-// rotary encoder interrupt routine to update position counter when turned
-// interrupt info: https://www.gammon.com.au/forum/bbshowpost.php?id=11488
-// ************************************************************
-void ICACHE_RAM_ATTR MenuManager_::doEncoder() {
-  bool pinA = digitalRead(ENC_APin);
-  bool pinB = digitalRead(ENC_BPin);
-  int delta = 0;
-
-  encoderToggle = !encoderToggle;
-
-  if ( (rotaryEncoder.encoderPrevA == pinA && rotaryEncoder.encoderPrevB == pinB) ) return;  // no change since last time (i.e. reject bounce)
-
-  // same direction (alternating between 0,1 and 1,0 in one direction or 1,1 and 0,0 in the other direction)
-       if (rotaryEncoder.encoderPrevA == 1 && rotaryEncoder.encoderPrevB == 0 && pinA == 0 && pinB == 1) {rotaryEncoder.encoder0Pos -= 1; delta = -1;}
-  else if (rotaryEncoder.encoderPrevA == 0 && rotaryEncoder.encoderPrevB == 1 && pinA == 1 && pinB == 0) {rotaryEncoder.encoder0Pos -= 1; delta = -1;}
-  else if (rotaryEncoder.encoderPrevA == 0 && rotaryEncoder.encoderPrevB == 0 && pinA == 1 && pinB == 1) {rotaryEncoder.encoder0Pos += 1; delta = 1;}
-  else if (rotaryEncoder.encoderPrevA == 1 && rotaryEncoder.encoderPrevB == 1 && pinA == 0 && pinB == 0) {rotaryEncoder.encoder0Pos += 1; delta = 1;}
-
-  // change of direction
-  else if (rotaryEncoder.encoderPrevA == 1 && rotaryEncoder.encoderPrevB == 0 && pinA == 0 && pinB == 0) {rotaryEncoder.encoder0Pos += 1; delta = 1;}
-  else if (rotaryEncoder.encoderPrevA == 0 && rotaryEncoder.encoderPrevB == 1 && pinA == 1 && pinB == 1) {rotaryEncoder.encoder0Pos += 1; delta = 1;}
-  else if (rotaryEncoder.encoderPrevA == 0 && rotaryEncoder.encoderPrevB == 0 && pinA == 1 && pinB == 0) {rotaryEncoder.encoder0Pos -= 1; delta = -1;}
-  else if (rotaryEncoder.encoderPrevA == 1 && rotaryEncoder.encoderPrevB == 1 && pinA == 0 && pinB == 1) {rotaryEncoder.encoder0Pos -= 1; delta = -1;}
-
-  // update previous readings
-  rotaryEncoder.encoderPrevA = pinA;
-  rotaryEncoder.encoderPrevB = pinB;
-
-  // Reset the display timeouts if we have movement
-  resetTimeouts();
 }
 
 // ************************************************************
@@ -941,13 +874,6 @@ void MenuManager_::countdownMenuTimeouts(clearTimeoutsType clearType) {
 }
 
 // ************************************************************
-// Get the current position of the rotary encoder
-// ************************************************************
-int MenuManager_::getCurrentEncoderPos() {
-  return rotaryEncoder.encoder0Pos;
-}
-
-// ************************************************************
 // Set the WiFi SSID from the selected menu item
 // ************************************************************
 void MenuManager_::setWiFiSSIDFromSelection() {
@@ -988,6 +914,22 @@ void MenuManager_::menuOncePerLoop() {
 
   debugMsgMnmX("Menu mode: " + String(menuMode) + " sel: " + String(oledMenu.selectedMenuItem) + " high: " + String(oledMenu.highlightedMenuItem) + " val: " + String(oledMenu.mValueEntered) + " conf: " + String(configTimeout) + " flash: " + String(flashTimeout) + " oled: " + String(oledTimeout));
 
+  // Read and debounce buttons 
+  if (btn1ReadMillis > nowMillis) {
+    if (digitalRead(BTN1Pin) == LOW) {
+      btn1ReadMillis = 0;
+      debugMsgMain("Confirm Button pressed");
+      menuManager.confirmButtonPress();
+    }
+  }
+  if (btn2ReadMillis > nowMillis) {
+    if (digitalRead(BTN2Pin) == LOW) {
+      btn2ReadMillis = 0;
+      debugMsgMain("Back Button pressed");
+      menuManager.backButtonPress();
+    }
+  }
+  
   // Re-initialise the display if it was off
   if (resetDisplay) {
     oled.setUp();
@@ -1006,18 +948,16 @@ void MenuManager_::menuOncePerLoop() {
 
     case value:
       serviceValue();
-      if (rotaryEncoder.reButtonPressed) {
+      if (readUnhandledEncoderPress()) {
         debugMsgMnm("Button pressed: value: "+ String(oledMenu.mValueEntered));
-        rotaryEncoder.reButtonPressed = 0;
         menuActions(oledMenu.nextTarget);
       }
       break;
 
     case stringValue:
       serviceValue();
-      if (rotaryEncoder.reButtonPressed) {
+      if (readUnhandledEncoderPress()) {
         debugMsgMnm("Button pressed: value: "+ String(oledMenu.mValueEntered));
-        rotaryEncoder.reButtonPressed = 0;
 
         // Spedial handling for string entry to allow a string to be built up and edited
         if (oledMenu.mValueEntered == BACKSPACE) {
@@ -1033,11 +973,11 @@ void MenuManager_::menuOncePerLoop() {
       break;
 
     case message:
-      if (rotaryEncoder.reButtonPressed == 1) clearFlashMenuMessage();
+      if (readUnhandledEncoderPress()) clearFlashMenuMessage();
       break;
 
     case off:
-      if (rotaryEncoder.reButtonPressed == 1) rootMenu();
+      if (readUnhandledEncoderPress()) rootMenu();
       break;
 
     default:
@@ -1098,12 +1038,23 @@ bool MenuManager_::getOledIsBlanked() {
 // Capture the confirm button press
 // ************************************************************
 void MenuManager_::confirmButtonPress() {
+  if (counterManager.isCounterExpired()) {
+    counterManager.confirmCounterExpired();
+  } else {
+    counterManager.toggleCounterRunning();
+  }
 }
 
 // ************************************************************
-// Capture the back button press
+// Capture the back button press - get out of menus
 // ************************************************************
 void MenuManager_::backButtonPress() {
+  if (menuMode == menu || menuMode == value || menuMode == stringValue) {
+    oled.clearDisplay();
+    rootMenu();
+  } else {
+    counterManager.resetCounter();
+  }
 }
 
 // ************************************************************
@@ -1113,6 +1064,20 @@ void IRAM_ATTR doEncoderWrapper() {
   portENTER_CRITICAL_ISR(&encoderMux);
   menuManager.doEncoder();
   portEXIT_CRITICAL_ISR(&encoderMux);
+}
+
+// ************************************************************
+// Switch changed - mark that there is an event waiting
+// ************************************************************
+void IRAM_ATTR btn1ISR() {
+  btn1ReadMillis = millis() + 50;
+}
+
+// ************************************************************
+// Switch changed - mark that there is an event waiting
+// ************************************************************
+void IRAM_ATTR btn2ISR() {
+  btn2ReadMillis = millis() + 50;
 }
 
 // ************************************************************
@@ -1127,7 +1092,120 @@ void MenuManager_::setupMenuManager() {
   rotaryEncoder.encoder0Pos = 0;
   attachInterrupt(digitalPinToInterrupt(ENC_APin), doEncoderWrapper, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENC_BPin), doEncoderWrapper, CHANGE);
+
+  // Back and confirm buttons
+  pinMode(BTN1Pin, INPUT_PULLUP);
+  pinMode(BTN2Pin, INPUT_PULLUP);
+
+  // Hook up the switches to the trigger handler
+  attachInterrupt(BTN1Pin, btn1ISR, CHANGE);
+  attachInterrupt(BTN2Pin, btn2ISR, CHANGE);
 }
+
+// -------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
+//                                  rotary encoder routines
+// -------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
+
+// ************************************************************
+//                     -interrupt for rotary encoder
+// rotary encoder interrupt routine to update position counter when turned
+// interrupt info: https://www.gammon.com.au/forum/bbshowpost.php?id=11488
+// ************************************************************
+void ICACHE_RAM_ATTR MenuManager_::doEncoder() {
+  bool pinA = digitalRead(ENC_APin);
+  bool pinB = digitalRead(ENC_BPin);
+
+  encoderToggle = !encoderToggle;
+
+  if ( (rotaryEncoder.encoderPrevA == pinA && rotaryEncoder.encoderPrevB == pinB) ) return;  // no change since last time (i.e. reject bounce)
+
+  // same direction (alternating between 0,1 and 1,0 in one direction or 1,1 and 0,0 in the other direction)
+       if (rotaryEncoder.encoderPrevA == 1 && rotaryEncoder.encoderPrevB == 0 && pinA == 0 && pinB == 1) {rotaryEncoder.encoder0Pos -= 1;}
+  else if (rotaryEncoder.encoderPrevA == 0 && rotaryEncoder.encoderPrevB == 1 && pinA == 1 && pinB == 0) {rotaryEncoder.encoder0Pos -= 1;}
+  else if (rotaryEncoder.encoderPrevA == 0 && rotaryEncoder.encoderPrevB == 0 && pinA == 1 && pinB == 1) {rotaryEncoder.encoder0Pos += 1;}
+  else if (rotaryEncoder.encoderPrevA == 1 && rotaryEncoder.encoderPrevB == 1 && pinA == 0 && pinB == 0) {rotaryEncoder.encoder0Pos += 1;}
+
+  // change of direction
+  else if (rotaryEncoder.encoderPrevA == 1 && rotaryEncoder.encoderPrevB == 0 && pinA == 0 && pinB == 0) {rotaryEncoder.encoder0Pos += 1;}
+  else if (rotaryEncoder.encoderPrevA == 0 && rotaryEncoder.encoderPrevB == 1 && pinA == 1 && pinB == 1) {rotaryEncoder.encoder0Pos += 1;}
+  else if (rotaryEncoder.encoderPrevA == 0 && rotaryEncoder.encoderPrevB == 0 && pinA == 1 && pinB == 0) {rotaryEncoder.encoder0Pos -= 1;}
+  else if (rotaryEncoder.encoderPrevA == 1 && rotaryEncoder.encoderPrevB == 1 && pinA == 0 && pinB == 1) {rotaryEncoder.encoder0Pos -= 1;}
+
+  // update previous readings
+  rotaryEncoder.encoderPrevA = pinA;
+  rotaryEncoder.encoderPrevB = pinB;
+
+  // Reset the display timeouts if we have movement
+  resetTimeouts();
+}
+
+  // ************************************************************
+  // Process encoder movement CCW
+  // ************************************************************
+  bool MenuManager_::getEncoderCCW() {
+  if (rotaryEncoder.encoder0Pos >= TICKS_PER_MOVE) {
+    rotaryEncoder.encoder0Pos -= TICKS_PER_MOVE;
+    oledMenu.lastMenuActivity = nowMillis;
+    return true;
+  }
+  return false;
+}
+
+  // ************************************************************
+  // Process encoder movement CW
+  // ************************************************************
+  bool MenuManager_::getEncoderCW() {
+  if (rotaryEncoder.encoder0Pos <= -TICKS_PER_MOVE) {
+    rotaryEncoder.encoder0Pos += TICKS_PER_MOVE;
+    oledMenu.lastMenuActivity = nowMillis;
+    return true;
+  }
+  return false;
+}
+
+// ************************************************************
+// Button debounce (rotary encoder)
+// ************************************************************
+void MenuManager_::reUpdateButton() {
+  bool tReading = digitalRead(ENC_BTN);               // read current button state
+  if (tReading != rotaryEncoder.encoderPrevButton) rotaryEncoder.reLastButtonChange = nowMillis;     // if it has changed reset timer
+  if ( (unsigned long)(nowMillis - rotaryEncoder.reLastButtonChange) > rotaryEncoder.reDebounceDelay ) {  // if button state is stable
+    if (rotaryEncoder.encoderPrevButton == rotaryEncoder.reButtonPressedState) {
+      if (rotaryEncoder.reButtonDebounced == 0) {     // if the button has been pressed
+        rotaryEncoder.reButtonPressed = 1;            // flag set when the button has been pressed
+      }
+      rotaryEncoder.reButtonDebounced = 1;            // debounced button status  (1 when pressed)
+    } else {
+      rotaryEncoder.reButtonDebounced = 0;
+    }
+  }
+
+  if (rotaryEncoder.reButtonDebounced == 1) {
+    resetTimeouts();
+  }
+
+  rotaryEncoder.encoderPrevButton = tReading;         // update last state read
+}
+
+// ************************************************************
+// Button debounce (rotary encoder)
+// ************************************************************
+bool MenuManager_::readUnhandledEncoderPress() {
+  if (rotaryEncoder.reButtonPressed == 1) {
+    rotaryEncoder.reButtonPressed = 0;
+    return true;
+  }
+  return false;
+}
+
+
+// -------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
+//                                         class wiring
+// -------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 // ************************************************************
 // Library internal singleton wiring

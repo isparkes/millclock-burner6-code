@@ -167,11 +167,12 @@ class MenuManager_ {
     void flashMenuMessage(String heading, String message);
     void clearFlashMenuMessage();
     void scrollMenuMessage(String message);
-    int  getCurrentEncoderPos();
     void menuOncePerSecond();
     void menuOncePerHour();
     void menuOncePerLoop();
     bool getOledIsBlanked();
+    void confirmButtonPress();
+    void backButtonPress();
   private:
     menuModes menuMode = off;                 // default mode at startup is off
     oledMenus oledMenu;
@@ -220,8 +221,9 @@ class MenuManager_ {
     void calculateAndSaveMinuteValue();
     void setWiFiSSIDFromSelection();
 
-    void confirmButtonPress();
-    void backButtonPress();
+    bool getEncoderCW();
+    bool getEncoderCCW();
+    bool readUnhandledEncoderPress();
 };
 
 extern MenuManager_ &menuManager;

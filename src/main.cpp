@@ -12,20 +12,6 @@
 #endif
 
 // ************************************************************
-// Switch changed - mark that there is an event waiting
-// ************************************************************
-void IRAM_ATTR btn1ISR() {
-  btn1ReadMillis = millis() + 50;
-}
-
-// ************************************************************
-// Switch changed - mark that there is an event waiting
-// ************************************************************
-void IRAM_ATTR btn2ISR() {
-  btn2ReadMillis = millis() + 50;
-}
-
-// ************************************************************
 // Sset up the unit
 // ************************************************************
 void setup() {
@@ -60,13 +46,6 @@ void setup() {
   pinMode(DATAPin, OUTPUT);
   pinMode(LATCHPin, OUTPUT);
   pinMode(BLANKPin, OUTPUT);
-
-  pinMode(BTN1Pin, INPUT_PULLUP);
-  pinMode(BTN2Pin, INPUT_PULLUP);
-
-  // Hook up the switches to the trigger handler
-  attachInterrupt(BTN1Pin, btn1ISR, CHANGE);
-  attachInterrupt(BTN2Pin, btn2ISR, CHANGE);
 
   // -------------------------------------------------------------------------
 
@@ -368,26 +347,6 @@ void loop()
     secsDelta = secsDeltaAbs;
   } else {
     secsDelta = 1000 - secsDeltaAbs;
-  }
-
-  // Read and debounce buttons 
-  if (btn1ReadMillis > nowMillis) {
-    if (digitalRead(BTN1Pin) == LOW) {
-      btn1ReadMillis = 0;
-//      debugMsgMain("Button 1 pressed");
-      if (counterManager.isCounterExpired()) {
-        counterManager.confirmCounterExpired();
-      } else {
-        counterManager.toggleCounterRunning();
-      }
-    }
-  }
-  if (btn2ReadMillis > nowMillis) {
-    if (digitalRead(BTN2Pin) == LOW) {
-      btn2ReadMillis = 0;
-//      debugMsgMain("Button 2 pressed");
-      counterManager.resetCounter();
-    }
   }
 
   delay(10);

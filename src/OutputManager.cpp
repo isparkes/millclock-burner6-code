@@ -41,7 +41,7 @@ uint32_t OutputManager_::decodeFromNumberArray(byte valueToDecode) {
   uint32_t decodedTwoDigits = 0;
   uint32_t decodedOneDigit = 0;
 
-  // for the case that our 595s don't have and output enable pin
+  // for the case that our 595s don't have and output enable pin, blank the digits as well
   if (!blanked) {
     if (cc->tubeType == ZIN70) {
       decodedOneDigit = DECODE_DIGIT_ZIN70[valueToDecode];    
@@ -76,16 +76,20 @@ dumpDecodedBitmap();
 // For 595ds where the output enable pin works as a blanking pin
 // ************************************************************
 void OutputManager_::setBlanked(bool blank) {
-  if (blank) {
-    digitalWrite(BLANKPin, LOW);
-  } else {
-    digitalWrite(BLANKPin, HIGH);
+  if (blanked != blank) {
+    if (blank) {
+      debugMsgOtm("Display blanked");
+    } else {
+      debugMsgOtm("Display unblanked");
+    }
   }
+
   blanked = blank;
-  if (blanked) {
-    debugMsgOtm("Display blanked");
+
+  if (blank) {
+    digitalWrite(BLANKPin, HIGH);
   } else {
-    debugMsgOtm("Display unblanked");
+    digitalWrite(BLANKPin, LOW);
   }
 }
 

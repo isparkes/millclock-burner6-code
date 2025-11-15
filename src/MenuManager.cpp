@@ -5,6 +5,15 @@
 // -------------------------------------------------------------------------------------------------
 
 // ************************************************************
+// Build the root menu / status display
+// ************************************************************
+void MenuManager_::rootMenu() {
+  debugMsgMnm("Root Menu");
+  resetMenu();
+  menuMode = root;
+}
+
+// ************************************************************
 // Main Menu
 // ************************************************************
 void MenuManager_::mainMenu() {
@@ -205,18 +214,7 @@ void MenuManager_::menuActions(menuTargets selectedAction) {
     // --------------------------------------------------
     // "Burn Menu Items"
     case toggleTubeType: {
-      switch (cc->tubeType) {
-        case ZIN70: {
-          cc->tubeType = ZIN18;
-          counterManager.setTubeType(ZIN18);
-          break;
-        }
-        case ZIN18: {
-          cc->tubeType = ZIN70;
-          counterManager.setTubeType(ZIN70);
-          break;
-        }
-      }
+      counterManager.toggleTubeType();
       burnMenu();
       break;
     }
@@ -245,7 +243,7 @@ void MenuManager_::menuActions(menuTargets selectedAction) {
       break;
     } 
     case setDigit1: {
-      setIntegerValue("Digit 1", counterManager.getDigitTime(1), 0, 999, saveDigit0);
+      setIntegerValue("Digit 1", counterManager.getDigitTime(1), 0, 999, saveDigit1);
       break;
     }
     case saveDigit1: {
@@ -457,6 +455,60 @@ void MenuManager_::menuActions(menuTargets selectedAction) {
 // -------------------------------------------------------------------------------------------------
 
 // ************************************************************
+// Flash a message to the display
+// ************************************************************
+void MenuManager_::flashMenuMessage(String heading, String message) {
+  // Only flash the message if the display is already on
+  if (!oled.getBlanked()) {
+    resetTimeouts();
+    flashTimeout = FLASH_TIME;
+    displayMessage(heading, message);
+  }
+} 
+
+// ************************************************************
+// Flash a message to the display
+// ************************************************************
+void MenuManager_::clearFlashMenuMessage() {
+  countdownMenuTimeouts(clearFlashTimeout);
+} 
+
+// ************************************************************
+// Add a scrolling message to the display
+// ************************************************************
+void MenuManager_::scrollMenuMessage(String message) {
+  // Only show the message if the display is already on
+  if (!oled.getBlanked()) {
+    resetTimeouts();
+    oled.showScrollingMessage(message);
+  }
+} 
+
+// ************************************************************
+// Button debounce (rotary encoder)
+// ************************************************************
+void MenuManager_::reUpdateButton() {
+    bool tReading = digitalRead(ENC_BTN);               // read current button state
+    if (tReading != rotaryEncoder.encoderPrevButton) rotaryEncoder.reLastButtonChange = nowMillis;     // if it has changed reset timer
+    if ( (unsigned long)(nowMillis - rotaryEncoder.reLastButtonChange) > rotaryEncoder.reDebounceDelay ) {  // if button state is stable
+      if (rotaryEncoder.encoderPrevButton == rotaryEncoder.reButtonPressedState) {
+        if (rotaryEncoder.reButtonDebounced == 0) {     // if the button has been pressed
+          rotaryEncoder.reButtonPressed = 1;            // flag set when the button has been pressed
+        }
+        rotaryEncoder.reButtonDebounced = 1;            // debounced button status  (1 when pressed)
+      } else {
+        rotaryEncoder.reButtonDebounced = 0;
+      }
+    }
+
+    if (rotaryEncoder.reButtonDebounced == 1) {
+      resetTimeouts();
+    }
+
+    rotaryEncoder.encoderPrevButton = tReading;         // update last state read
+}
+
+// ************************************************************
 // Set up a string on the display for entry
 // ************************************************************
 void MenuManager_::setStringValue(String title, menuTargets target, String initialValue) {
@@ -487,67 +539,44 @@ void MenuManager_::setIntegerValue(String title, int startValue, int min, int ma
 }
 
 // ************************************************************
-// Flash a message to the display
+// When we are in the root, do the actions needed to service it
 // ************************************************************
-void MenuManager_::flashMenuMessage(String heading, String message) {
-  // Only flash the message if the display is already on
-  if (!oled.getBlanked()) {
-    resetTimeouts();
-    flashTimeout = FLASH_TIME;
-    displayMessage(heading, message);
+void MenuManager_::serviceRootMenu() {
+  bool doToggle = false;
+  if (rotaryEncoder.encoder0Pos >= TICKS_PER_MOVE) {
+    rotaryEncoder.encoder0Pos -= TICKS_PER_MOVE;
+    oledMenu.lastMenuActivity = nowMillis;
+    doToggle = true;
   }
-} 
-
-// ************************************************************
-// Flash a message to the display
-// ************************************************************
-void MenuManager_::clearFlashMenuMessage() {
-  flashTimeout = 0;
-} 
-
-// ************************************************************
-// Add a scrolling message to the display
-// ************************************************************
-void MenuManager_::scrollMenuMessage(String message) {
-  // Only show the message if the display is already on
-  if (!oled.getBlanked()) {
-    resetTimeouts();
-    oled.showScrollingMessage(message);
+  if (rotaryEncoder.encoder0Pos <= -TICKS_PER_MOVE) {
+    rotaryEncoder.encoder0Pos += TICKS_PER_MOVE;
+    oledMenu.lastMenuActivity = nowMillis;
+    doToggle = true;
   }
-} 
+  
+  if (rotaryEncoder.reButtonPressed == 1) {
+    mainMenu();
+    rotaryEncoder.reButtonPressed = 0;
+  }
 
-// ************************************************************
-// Button debounce (rotary encoder)
-// ************************************************************
-void MenuManager_::reUpdateButton() {
-    bool tReading = digitalRead(ENC_BTN);               // read current button state
-    if (tReading != rotaryEncoder.encoderPrevButton) rotaryEncoder.reLastButtonChange = nowMillis;     // if it has changed reset timer
-    if ( (unsigned long)(nowMillis - rotaryEncoder.reLastButtonChange) > rotaryEncoder.reDebounceDelay ) {  // if button state is stable
-      if (rotaryEncoder.encoderPrevButton == rotaryEncoder.reButtonPressedState) {
-        if (rotaryEncoder.reButtonDebounced == 0) {     // if the button has been pressed
-          rotaryEncoder.reButtonPressed = 1;            // flag set when the button has been pressed
-          serviceStatusDisplayClick();
-        }
-        rotaryEncoder.reButtonDebounced = 1;            // debounced button status  (1 when pressed)
-      } else {
-        rotaryEncoder.reButtonDebounced = 0;
-      }
-    }
+  if (doToggle) {
+    counterManager.toggleTubeType();
+    cc->tubeType = counterManager.getTubeType();
+  }
 
-    if (rotaryEncoder.reButtonDebounced == 1) {
-      resetTimeouts();
-    }
-    rotaryEncoder.encoderPrevButton = tReading;         // update last state read
+  oled.setTextSize(1);
+  oled.showStatusLine();
+
+  oled.clearScrollingMessage();
+  oled.setCursor(0, 0);
+  if (WiFi.isConnected()) {
+    oled.showScrollingMessage("IP: " + WiFi.localIP().toString());
+    oled.showScrollingMessage(String(WiFi.getHostname()) + ".local");
+    oled.showScrollingMessage(String(WiFi.SSID()));
+  } else {
+    oled.showScrollingMessage("WiFi not connected");
+  }
 }
-
-// ************************************************************
-// Service the status display (when no menu is shown)
-// ************************************************************
-void MenuManager_::serviceStatusDisplayClick() {
-  debugMsgMnm("Encoder button pressed");
-  if (menuMode == off) mainMenu();        // start the default menu
-}
-
 
 // ************************************************************
 // When we are in a menu, do the actions needed to service it
@@ -565,6 +594,7 @@ void MenuManager_::serviceMenu() {
     oledMenu.lastMenuActivity = nowMillis;
     oledMenu.needUpdate = true;
   }
+
   if (rotaryEncoder.reButtonPressed == 1) {
     oledMenu.selectedMenuItem = oledMenu.highlightedMenuItem;
     oledMenu.lastMenuActivity = nowMillis;
@@ -573,7 +603,7 @@ void MenuManager_::serviceMenu() {
   }
 
   if (oledMenu.needUpdate) {
-    const int _centreLine = displayMaxLines / 2 + 1;    // mid list point
+    const int _centreLine = DISPLAY_MAX_LINES / 2 + 1;    // mid list point
     oled.clearDisplay();
     oled.setTextColor(WHITE);
 
@@ -583,20 +613,20 @@ void MenuManager_::serviceMenu() {
 
     // title
     oled.setCursor(0, 0);
-    if (menuLargeText) {
+    if (MENU_LARGE_TEXT) {
       oled.setTextSize(2);
-      oled.println(oledMenu.menuItems[oledMenu.highlightedMenuItem].substring(0, MaxmenuTitleLength));
+      oled.println(oledMenu.menuItems[oledMenu.highlightedMenuItem].substring(0, MAX_TITLE_LENGTH));
     } else {
-      if (oledMenu.menuTitle.length() > MaxmenuTitleLength) oled.setTextSize(1);
+      if (oledMenu.menuTitle.length() > MAX_TITLE_LENGTH) oled.setTextSize(1);
       else oled.setTextSize(2);
       oled.println(oledMenu.menuTitle);
     }
-    oled.drawLine(0, topLine-1, oled.width(), topLine-1, WHITE);       // draw horizontal line under title
+    oled.drawLine(0, TOP_LINE - 1, oled.width(), TOP_LINE - 1, WHITE);       // draw horizontal line under title
 
     // menu
     oled.setTextSize(1);
-    oled.setCursor(0, topLine);
-    for (int i=1; i <= displayMaxLines; i++) {
+    oled.setCursor(0, TOP_LINE);
+    for (int i=1; i <= DISPLAY_MAX_LINES; i++) {
       int item = oledMenu.highlightedMenuItem - _centreLine + i;
       if (item == oledMenu.highlightedMenuItem) oled.setTextColor(BLACK, WHITE);
       else oled.setTextColor(WHITE);
@@ -609,7 +639,6 @@ void MenuManager_::serviceMenu() {
   }
 }
 
-
 // ************************************************************
 // Service value entry
 // ************************************************************
@@ -619,29 +648,38 @@ void MenuManager_::serviceValue() {
     resetMenu();
   }
 
+  // ---------------------------------------------------------------------- 
+  // adjust value based on encoder movement, reduce the sensitvity so it takes several 'ticks' to move the value by one step
   if (rotaryEncoder.encoder0Pos >= TICKS_PER_MOVE) {
     rotaryEncoder.encoder0Pos -= TICKS_PER_MOVE;
     oledMenu.mValueEntered-= oledMenu.mValueStep;
     oledMenu.lastMenuActivity = nowMillis;
     oledMenu.needUpdate = true;
   }
+
   if (rotaryEncoder.encoder0Pos <= -TICKS_PER_MOVE) {
     rotaryEncoder.encoder0Pos += TICKS_PER_MOVE;
     oledMenu.mValueEntered+= oledMenu.mValueStep;
     oledMenu.lastMenuActivity = nowMillis;
     oledMenu.needUpdate = true;
   }
+
+  // ---------------------------------------------------------------------- 
+  // Wrap entered value if out of bounds
   if (oledMenu.mValueEntered < oledMenu.mValueLow) {
     oledMenu.mValueEntered = oledMenu.mValueLow;
     oledMenu.lastMenuActivity = nowMillis;
     oledMenu.needUpdate = true;
   }
+
   if (oledMenu.mValueEntered > oledMenu.mValueHigh) {
     oledMenu.mValueEntered = oledMenu.mValueHigh;
     oledMenu.lastMenuActivity = nowMillis;
     oledMenu.needUpdate = true;
   }
 
+  // ---------------------------------------------------------------------- 
+  // redraw the display if needed
   if (oledMenu.needUpdate) {
     if (menuMode == value) {
       const int _valueSpacingX = 30;      // spacing for the displayed value y position
@@ -651,18 +689,18 @@ void MenuManager_::serviceValue() {
 
       // title
       oled.setCursor(0, 0);
-      if (oledMenu.menuTitle.length() > MaxmenuTitleLength) oled.setTextSize(1);
+      if (oledMenu.menuTitle.length() > MAX_TITLE_LENGTH) oled.setTextSize(1);
       else oled.setTextSize(2);
       oled.println(oledMenu.menuTitle);
-      oled.drawLine(0, topLine-1, oled.width(), topLine-1, WHITE);       // draw horizontal line under title
+      oled.drawLine(0, TOP_LINE - 1, oled.width(), TOP_LINE - 1, WHITE);       // draw horizontal line under title
 
       // value selected
-      oled.setCursor(_valueSpacingX, topLine + _valueSpacingY);
+      oled.setCursor(_valueSpacingX, TOP_LINE + _valueSpacingY);
       oled.setTextSize(3);
       oled.println(String(oledMenu.mValueEntered));
 
       // range
-      oled.setCursor(0, oled.height() - lineSpace1 - 1 );   // bottom of display
+      oled.setCursor(0, oled.height() - LINE_SPACE_1 - 1 );   // bottom of display
       oled.setTextSize(1);
       oled.println(String(oledMenu.mValueLow) + " to " + String(oledMenu.mValueHigh));
 
@@ -681,40 +719,40 @@ void MenuManager_::serviceValue() {
 
       // title
       oled.setCursor(0, 0);
-      if (oledMenu.menuTitle.length() > MaxmenuTitleLength) oled.setTextSize(1);
+      if (oledMenu.menuTitle.length() > MAX_TITLE_LENGTH) oled.setTextSize(1);
       else oled.setTextSize(2);
       oled.println(oledMenu.menuTitle);
-      oled.drawLine(0, topLine-1, oled.width(), topLine-1, WHITE);       // draw horizontal line under title
+      oled.drawLine(0, TOP_LINE - 1, oled.width(), TOP_LINE - 1, WHITE);       // draw horizontal line under title
 
       // value selected
       switch (oledMenu.mValueEntered) {
         case BACKSPACE: {
-          oled.setCursor(30, topLine + _valueSpacingY);
+          oled.setCursor(30, TOP_LINE + _valueSpacingY);
           oled.setTextSize(2);
           oled.println("DELETE");
           break;
         }
         case DONE: {
-          oled.setCursor(40, topLine + _valueSpacingY);
+          oled.setCursor(40, TOP_LINE + _valueSpacingY);
           oled.setTextSize(2);
           oled.println("DONE");
           break;
         }
         case RESTART: {
-          oled.setCursor(26, topLine + _valueSpacingY);
+          oled.setCursor(26, TOP_LINE + _valueSpacingY);
           oled.setTextSize(2);
           oled.println("RESTART");
           break;
         }
         default: {
-          oled.setCursor(52, topLine + _valueSpacingY);
+          oled.setCursor(52, TOP_LINE + _valueSpacingY);
           oled.setTextSize(3);
           oled.println(CHARSET.substring(oledMenu.mValueEntered, oledMenu.mValueEntered+1));
         }
       }
 
       // range
-      oled.setCursor(0, oled.height() - lineSpace1 - 1 );   // bottom of display
+      oled.setCursor(0, oled.height() - LINE_SPACE_1 - 1 );   // bottom of display
       oled.setTextSize(1);
       if (oledMenu.enteredString.length() == 0) {
         oled.println("Enter value then DONE");
@@ -770,17 +808,17 @@ void MenuManager_::displayMessage(String _title, String _message) {
 
   // title
   oled.setCursor(0, 0);
-  if (menuLargeText) {
+  if (MENU_LARGE_TEXT) {
     oled.setTextSize(2);
-    oled.println(_title.substring(0, MaxmenuTitleLength));
+    oled.println(_title.substring(0, MAX_TITLE_LENGTH));
   } else {
-    if (_title.length() > MaxmenuTitleLength) oled.setTextSize(1);
+    if (_title.length() > MAX_TITLE_LENGTH) oled.setTextSize(1);
     else oled.setTextSize(2);
     oled.println(_title);
   }
 
   // message
-  oled.setCursor(0, topLine);
+  oled.setCursor(0, TOP_LINE);
   oled.setTextSize(1);
   oled.println(_message);
 
@@ -788,11 +826,9 @@ void MenuManager_::displayMessage(String _title, String _message) {
  }
 
 // ************************************************************
-// Reset the menu system
 // reset all menu variables / flags
 // ************************************************************
 void MenuManager_::resetMenu() {
-  menuMode = off;
   oledMenu.selectedMenuItem = noTarget;
   rotaryEncoder.encoder0Pos = 0;
   oledMenu.noOfmenuItems = 0;
@@ -803,7 +839,7 @@ void MenuManager_::resetMenu() {
 
   oledMenu.lastMenuActivity = nowMillis;
 
-  oled.blankDisplay();
+//  oled.blankDisplay();
 }
 
 
@@ -859,7 +895,12 @@ void MenuManager_::resetTimeouts() {
 // ************************************************************
 // Count down the various timeouts
 // ************************************************************
-void MenuManager_::countdownMenuTimeouts() {
+void MenuManager_::countdownMenuTimeouts(clearTimeoutsType clearType) {
+  if (clearType == clearFlashTimeout) {
+    flashTimeout = 0;
+    oled.clearDisplay();
+  }
+
   if (flashTimeout > 0) {
     flashTimeout--;
     if(flashTimeout == 0) {
@@ -867,11 +908,20 @@ void MenuManager_::countdownMenuTimeouts() {
     }
   }
 
+  if (clearType == clearConfigTimeout) {
+    configTimeout = 0;
+    oled.clearDisplay();
+  }
+
   if (configTimeout > 0) {
     configTimeout--;
     if (configTimeout == 0) {
       oled.clearDisplay();
     }
+  }
+
+  if (clearType == clearOledTimeout) {
+    oledTimeout = 1;
   }
 
   if (oledTimeout > 0) {
@@ -883,8 +933,10 @@ void MenuManager_::countdownMenuTimeouts() {
     }
   }
 
-  if ((oledTimeout == -1) && (OLED_ON_TIME > 0)) {
-    oledTimeout = OLED_ON_TIME;
+  if (menuMode != off) {
+    if (configTimeout == 0 && flashTimeout == 0) {
+      rootMenu();
+    }
   }
 }
 
@@ -934,22 +986,19 @@ String MenuManager_::getMenuValueEnteredText() {
 void MenuManager_::menuOncePerLoop() {
   reUpdateButton();               // update rotary encoder button status (if pressed activate default menu)
 
-  if (menuMode == off) return;    // if menu system is turned off do nothing more
-
   debugMsgMnmX("Menu mode: " + String(menuMode) + " sel: " + String(oledMenu.selectedMenuItem) + " high: " + String(oledMenu.highlightedMenuItem) + " val: " + String(oledMenu.mValueEntered) + " conf: " + String(configTimeout) + " flash: " + String(flashTimeout) + " oled: " + String(oledTimeout));
 
+  // Re-initialise the display if it was off
   if (resetDisplay) {
-    // Re-initialise
     oled.setUp();
     resetDisplay = false;
   }
 
-  if ( configTimeout == 0 ) {
-    resetMenu();
-    return;
-  }
-
   switch (menuMode) {
+    case root:
+      serviceRootMenu();
+      break;
+
     case menu:
       serviceMenu();
       menuActions(oledMenu.menuActions[oledMenu.selectedMenuItem]);
@@ -969,6 +1018,8 @@ void MenuManager_::menuOncePerLoop() {
       if (rotaryEncoder.reButtonPressed) {
         debugMsgMnm("Button pressed: value: "+ String(oledMenu.mValueEntered));
         rotaryEncoder.reButtonPressed = 0;
+
+        // Spedial handling for string entry to allow a string to be built up and edited
         if (oledMenu.mValueEntered == BACKSPACE) {
           oledMenu.enteredString = oledMenu.enteredString.substring(0, oledMenu.enteredString.length() - 1);
         } else if (oledMenu.mValueEntered == RESTART) {
@@ -985,6 +1036,10 @@ void MenuManager_::menuOncePerLoop() {
       if (rotaryEncoder.reButtonPressed == 1) clearFlashMenuMessage();
       break;
 
+    case off:
+      if (rotaryEncoder.reButtonPressed == 1) rootMenu();
+      break;
+
     default:
       break;
   }
@@ -995,23 +1050,34 @@ void MenuManager_::menuOncePerLoop() {
 // ************************************************************
 void MenuManager_::menuOncePerSecond() {
   // Manage timeouts
-  countdownMenuTimeouts();
+  countdownMenuTimeouts(normalTimeouts);
 
-  // only show status line when not in config/flashmessage mode and display is on
-  if (oledTimeout != 0 && configTimeout == 0 && flashTimeout == 0) {
-    oled.setTextSize(1);
-    oled.showStatusLine();
-
-    oled.clearScrollingMessage();
-    oled.setCursor(0, 0);
-    if (WiFi.isConnected()) {
-      oled.showScrollingMessage("IP: " + WiFi.localIP().toString());
-      oled.showScrollingMessage(String(WiFi.getHostname()) + ".local");
-      oled.showScrollingMessage(String(WiFi.SSID()));
-    } else {
-      oled.showScrollingMessage("WiFi not connected");
-    }
+  #ifdef MNM_EXTENDED_DEBUG
+  String menuText = "";
+  switch (menuMode) {
+    case off:
+    menuText = "OFF";
+      break;
+    case root:
+    menuText = "ROOT";
+      break;
+    case menu:
+    menuText = "MENU";
+      break;
+    case value:
+    menuText = "VALUE";
+      break;
+    case stringValue:
+    menuText = "STRING";
+      break;
+    case message:
+    menuText = "MESSAGE";
+      break;
+    default:
+      break;
   }
+  debugMsgMnm("Menu mode: " + menuText);
+  #endif
 }
 
 // ************************************************************

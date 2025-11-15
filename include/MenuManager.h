@@ -17,12 +17,31 @@
 #define OLED_ON_LONG         2            // 
 #define OLED_ON_DEF          1            // Default value
 
-#define OLED_ON_TIME         14400        // 4 Hours
+#define OLED_ON_TIME         60           // 4 Hours
 
 #define CONFIG_TIME         10            // Time in seconds we stay in config mode
 #define FLASH_TIME           2            // Time in seconds we show an OLED flash message for
 
 #define TICKS_PER_MOVE       2            // number of encoder ticks before we move one position in a menu
+
+#define MENU_LARGE_TEXT      0            // show larger text when possible (if struggling to read the small text)
+#define TOP_LINE            18            // y position of lower area of the display (18 with two colour displays)
+#define LINE_SPACE_1         9            // line spacing for textsize 1 (small text)
+#define LINE_SPACE_2        17            // line spacing for textsize 2 (large text)
+#define DISPLAY_MAX_LINES    5            // max lines that can be displayed in lower section of display in textsize1 (5 on larger oLeds)
+#define MAX_TITLE_LENGTH    10            // max characters per line when using text size 2 (usually 10)
+
+const String CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+@#*%&/()=?!$-_ ";
+#define BACKSPACE           80
+#define DONE                81
+#define RESTART             82
+
+enum clearTimeoutsType {
+  clearFlashTimeout,
+  clearConfigTimeout,
+  clearOledTimeout,
+  normalTimeouts
+};
 
 enum menuTargets {
   noTarget,
@@ -93,11 +112,11 @@ enum menuTargets {
 // modes that the menu system can be in
 enum menuModes {
   off,                                  // display is off
+  root,                                 // main menu is active
   menu,                                 // a menu is active
   value,                                // 'enter a numeric value' non blocking is active
   stringValue,                          // 'enter a string value' non blocking is active
-  message,                              // displaying a message
-  blocking                              // a blocking procedure is in progress (see enter value)
+  message                               // displaying a message
 };
 
 struct oledMenus {
@@ -131,18 +150,6 @@ struct rotaryEncoders {
   const uint32_t reDebounceDelay = DEBOUNCEDELAY;        // button debounce delay setting
   bool reButtonPressed = 0;                              // flag set when the button is pressed (it has to be manually reset)
 };
-
-const bool menuLargeText = 0;             // show larger text when possible (if struggling to read the small text)
-const int topLine = 18;                   // y position of lower area of the display (18 with two colour displays)
-const byte lineSpace1 = 9;                // line spacing for textsize 1 (small text)
-const byte lineSpace2 = 17;               // line spacing for textsize 2 (large text)
-const int displayMaxLines = 5;            // max lines that can be displayed in lower section of display in textsize1 (5 on larger oLeds)
-const int MaxmenuTitleLength = 10;        // max characters per line when using text size 2 (usually 10)
-
-const String CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+@#*%&/()=?!$-_ ";
-const int BACKSPACE = 80;
-const int DONE = 81;
-const int RESTART = 82;
 
 class MenuManager_ {
   private:
@@ -180,6 +187,7 @@ class MenuManager_ {
     bool resetDisplay;
 
     // Menus
+    void rootMenu();
     void mainMenu();
     void burnMenu();
     void wifiMenu();
@@ -194,6 +202,7 @@ class MenuManager_ {
     void setIntegerValue(String title, int startValue, int minValue, int maxValue, menuTargets target);
     void setStringValue(String title, menuTargets target, String intialValue);
 
+    void serviceRootMenu();
     void serviceMenu();
     void serviceValue();
     void menuValues();
@@ -202,7 +211,7 @@ class MenuManager_ {
     void displayMessage(String _title, String _message);
     void resetMenu();
     void resetTimeouts();
-    void countdownMenuTimeouts();
+    void countdownMenuTimeouts(clearTimeoutsType clearType);
     void manageMenu();
     byte getMenuOptionSelected();
     String getMenuOptionSelectedText();
@@ -210,7 +219,6 @@ class MenuManager_ {
     void calculateAndSaveHourValue();
     void calculateAndSaveMinuteValue();
     void setWiFiSSIDFromSelection();
-    void serviceStatusDisplayClick();
 
     void confirmButtonPress();
     void backButtonPress();

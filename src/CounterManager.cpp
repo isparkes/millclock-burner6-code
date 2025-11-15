@@ -425,6 +425,22 @@ void CounterManager_::toggleCounterRunning() {
 }
 
 // ************************************************************
+// Button press toggle of running status
+// ************************************************************
+void CounterManager_::toggleTubeType() {
+    switch (_currentTubeType) {
+    case ZIN70: {
+      setTubeType(ZIN18);
+      break;
+    }
+    case ZIN18: {
+      setTubeType(ZIN70);
+      break;
+    }
+  }
+}
+
+// ************************************************************
 // Internal plumbing
 // ************************************************************
 

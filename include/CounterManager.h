@@ -74,6 +74,7 @@ class CounterManager_
     unsigned int getCurrentCounterVal();
     String getCurrentCounterValString();
     void toggleCounterRunning();
+    void toggleTubeType();
   private:
     void copyInitialArrayToCurrent();
     void copyInitialRepetitionsToCurrent();

@@ -236,8 +236,8 @@ void performOncePerSecondProcessing() {
 //  debugMsgMain("Counter value from manager: " + String(counterManager.getCurrentCounterVal()));
   outputManager.updateOncePerSecond();
 
-  // Turn off tubes at the end of the run
-  blanked = counterManager.isCounterExpired() || counterManager.isCounterExpiredConfirmed();
+  // Turn off tubes at the end of the run of when the 
+  outputManager.setBlanked(!counterManager.isCounterRunning());
 
   bool ind1Value = false;
   if (counterManager.isCounterExpired()) {
@@ -279,10 +279,6 @@ void performOncePerSecondProcessing() {
   // -------------------------------------------------------------------------------
   
   debugManager.debugAutoOffCheck();
-
-  // -------------------------------------------------------------------------------
-
-  outputManager.setBlanked(counterManager.isCounterRunning() == false);
 
   // -------------------------------------------------------------------------------
 

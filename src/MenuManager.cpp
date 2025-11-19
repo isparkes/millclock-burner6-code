@@ -518,17 +518,19 @@ void MenuManager_::setIntegerValue(String title, int startValue, int min, int ma
 // When we are in the root, do the actions needed to service it
 // ************************************************************
 void MenuManager_::serviceRootMenu() {
-  bool doToggle = false;
 
-  if (getEncoderCCW()) {
-    doToggle = true;
-  }
-
-  if (getEncoderCW()) {
-    doToggle = true;
-  }
-  
   if (counterManager.isCounterRunning()) {
+    // turning the encoder puts the device into pause mode and selects the next digit
+    if (getEncoderCCW()) {
+      counterManager.pauseCounter();
+      counterManager.incrementOverrideValue();
+    }
+    
+    if (getEncoderCW()) {
+      counterManager.pauseCounter();
+      counterManager.decrementOverrideValue();
+    }
+
     // When we are running, pressing the encoder pauses the counter
     if (readUnhandledEncoderPress()) {
       if (!counterManager.isCounterPaused()) {
@@ -544,7 +546,7 @@ void MenuManager_::serviceRootMenu() {
     }
   
     // Only change the tube type if the counter is not running
-    if (doToggle) {
+    if (getEncoderCCW() || getEncoderCW()) {
       counterManager.toggleTubeType();
       cc->tubeType = counterManager.getTubeType();
     }
@@ -854,7 +856,9 @@ void MenuManager_::countdownMenuTimeouts(clearTimeoutsType clearType) {
   }
 
   if (clearType == clearOledTimeout) {
-    oledTimeout = 1;
+    if (oledTimeout != -1) {
+      oledTimeout = 1;
+    }
   }
 
   if (oledTimeout > 0) {

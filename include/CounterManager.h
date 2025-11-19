@@ -69,24 +69,29 @@ class CounterManager_
     bool isCounterRunning();
     bool isCounterExpired();
     bool isCounterPaused();
+    bool isCounterOverride();
     bool isCounterExpiredConfirmed();
     void confirmCounterExpired();
     unsigned int getCurrentCounterVal();
     String getCurrentCounterValString();
     void toggleCounterRunning();
     void toggleTubeType();
+    void incrementOverrideValue();
+    void decrementOverrideValue();
   private:
     void copyInitialArrayToCurrent();
     void copyInitialRepetitionsToCurrent();
     config_set_t getCurrentConfigSet();
     config_set_t parseConfigString(String inputString);
 
+    bool _isOverride = false;
     bool _counterRunning = false;
     bool _counterPaused = false;
     bool _counterDone = false;
     bool _counterDoneConfirmed = false;
     byte _digitCurrentValues[VALUES_PER_DIGIT];
     int  _repetitionsCurrent = 0;
+    int _overrideCount = 0;
     unsigned int _currentCount = 0;
     tube_type_t _currentTubeType = ZIN70;
     config_set_t configZIN70;

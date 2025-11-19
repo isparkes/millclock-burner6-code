@@ -8,6 +8,7 @@
 #include "TimeLib.h"
 #include "Globals.h"
 #include "CounterManager.h"
+#include "DebugManager.h"
 
 // ----------------------- Defines -----------------------
 

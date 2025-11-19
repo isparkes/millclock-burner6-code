@@ -267,6 +267,7 @@ void CounterManager_::startCounter() {
   debugMsgCmg("!!!Starting Counter");
   _counterRunning = true;
   _counterPaused = false;
+  _isOverride = false;
 }
 
 // ************************************************************
@@ -295,14 +296,79 @@ void CounterManager_::stopCounter() {
 // Pause the counter
 // ************************************************************
 void CounterManager_::pauseCounter() {
-  debugMsgCmg("!!!Pausing Counter");
+  if (!_counterPaused) {
+    debugMsgCmg("!!!Pausing Counter");
+  }
   _counterPaused = true;
 }
+
+// ************************************************************
+// Start/restart the counter
+// ************************************************************
+void CounterManager_::incrementOverrideValue() {
+  if (!_isOverride) {
+    debugMsgCmg("Setting obverride value");
+    _overrideCount = _currentCount;
+    _isOverride = true;
+  } else {
+    _overrideCount++;
+    switch (_currentTubeType) {
+      case ZIN70: {
+        if(_overrideCount > 10) {
+          _overrideCount = 0;
+        }
+        break;
+      }
+      case ZIN18: {
+        if(_overrideCount > 9) {
+          _overrideCount = 0;
+        }
+        break;
+      }
+    }
+  }
+}
+
+// ************************************************************
+// Start/restart the counter
+// ************************************************************
+void CounterManager_::decrementOverrideValue() {
+  if (!_isOverride) {
+    debugMsgCmg("Setting obverride value");
+    _overrideCount = _currentCount;
+    _isOverride = true;
+  } else {
+    _overrideCount--;
+    switch (_currentTubeType) {
+      case ZIN70: {
+        if(_overrideCount < 0) {
+          _overrideCount = 10;
+        }
+        break;
+      }
+      case ZIN18: {
+        if(_overrideCount < 0) {
+          _overrideCount = 9;
+        }
+        break;
+      }
+    }
+  }
+}
+
 
 // ************************************************************
 // Do a count - called once per second
 // ************************************************************
 void CounterManager_::counterCount() {
+  if (_isOverride) {
+    #ifdef CMG_EXTENDED_DEBUG
+    debugMsgCmg("Override active - skipping count.");
+    #endif
+    _currentCount = _overrideCount;
+    return;
+  }
+
   if ((!_counterRunning) || (_counterPaused)) {
     #ifdef CMG_EXTENDED_DEBUG
     debugMsgCmg("Counter not running.");
@@ -371,6 +437,13 @@ bool CounterManager_::isCounterExpiredConfirmed() {
 // ************************************************************
 bool CounterManager_::isCounterPaused() {
   return _counterPaused;
+}
+
+// ************************************************************
+// Is the counter in override mode?
+// ************************************************************
+bool CounterManager_::isCounterOverride() {
+  return _isOverride;
 }
 
 // ************************************************************

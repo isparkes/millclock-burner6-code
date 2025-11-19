@@ -5,14 +5,21 @@ void OLED_::setUp()
   // Set up based on the OLED display we are using
   // SSD_1306 is the 0.96" and 2.42"
   // SH_1106 is the 1.30"
+  bool oledInitialized = false;
   #ifdef OLED_SSD1306
   _display.reset(new Adafruit_SSD1306(128,64, &Wire, -1));
-  _display->begin(SSD1306_SWITCHCAPVCC, 0x3C, true, true);
+  oledInitialized = _display->begin(SSD1306_SWITCHCAPVCC, 0x3C, true, true);
   #endif
   #ifdef OLED_SH1106
   _display.reset(new Adafruit_SH1106G(128,64, &Wire, -1));
-  _display->begin(0x3C, true);
+  oledInitialized = _display->begin(0x3C, true);
   #endif
+
+  if(!oledInitialized) {
+    debugMsgMnm("OLED allocation failed");
+  }else {
+    debugMsgMnmX("OLED allocation OK!");
+  }
 
   _display->setTextSize(1);
   _display->setTextColor(WHITE, BLACK);
@@ -113,7 +120,9 @@ void OLED_::drawWiFiInd() {
 void OLED_::drawRunInd() {
   _display->setCursor(RUN_IND_X,STATUS_LINE_Y);
   if (counterManager.isCounterRunning()) {
-    if(counterManager.isCounterPaused()) {
+    if(counterManager.isCounterOverride()) {
+      _display->print("O");
+    } else if (counterManager.isCounterPaused()) {
       _display->print("P");
     } else {
       _display->print("R");
@@ -149,7 +158,13 @@ void OLED_::drawTubeTypeInd() {
 
 void OLED_::drawValueInd() {
   _display->setCursor(VAL_IND_X,STATUS_LINE_Y);
-  _display->print("V:" + counterManager.getCurrentCounterValString() + ":" + String(counterManager.getSecondsRemainingCurrentValue()));
+  if (counterManager.isCounterExpired()) {
+    _display->print("V:---:---");
+  } else if (counterManager.isCounterOverride()) {
+    _display->print("V:" + counterManager.getCurrentCounterValString() + ":---");
+  } else {
+    _display->print("V:" + counterManager.getCurrentCounterValString() + ":" + String(counterManager.getSecondsRemainingCurrentValue()));
+  }
 }
 
 // --------------------------------------------------

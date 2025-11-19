@@ -8,7 +8,7 @@
 
 
 // -------------------------------------------------------------------------------
-#define SOFTWARE_VERSION "MCB6-ESP32 0.0.6.0"
+#define SOFTWARE_VERSION "MCB6-ESP32 0.0.7.0"
 
 // Add debug statments to code - needs extra space
 #define DEBUG                       // DEBUG | DEBUG_OFF

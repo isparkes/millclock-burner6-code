@@ -17,9 +17,9 @@
 #define OLED_ON_LONG         2            // 
 #define OLED_ON_DEF          1            // Default value
 
-#define OLED_ON_TIME         60           // 4 Hours
+#define OLED_ON_TIME         -1           // seconds to keep the OLED on, -1 = always on
 
-#define CONFIG_TIME         10            // Time in seconds we stay in config mode
+#define CONFIG_TIME          10           // Time in seconds we stay in config mode
 #define FLASH_TIME           2            // Time in seconds we show an OLED flash message for
 
 #define TICKS_PER_MOVE       2            // number of encoder ticks before we move one position in a menu

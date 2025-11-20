@@ -264,10 +264,14 @@ int CounterManager_::getRepetitionsCurrent() {
 // Start/restart the counter
 // ************************************************************
 void CounterManager_::startCounter() {
+  if(_isOverride) {
+    debugMsgCmg("Clearing override mode on counter start.");
+    clearUpToCurrentOverrideDigit();
+    _isOverride = false;
+  }
   debugMsgCmg("!!!Starting Counter");
   _counterRunning = true;
   _counterPaused = false;
-  _isOverride = false;
 }
 
 // ************************************************************
@@ -312,6 +316,7 @@ void CounterManager_::incrementOverrideValue() {
     _isOverride = true;
   } else {
     _overrideCount++;
+    _currentCount = _overrideCount;
     switch (_currentTubeType) {
       case ZIN70: {
         if(_overrideCount > 10) {
@@ -339,6 +344,7 @@ void CounterManager_::decrementOverrideValue() {
     _isOverride = true;
   } else {
     _overrideCount--;
+    _currentCount = _overrideCount;
     switch (_currentTubeType) {
       case ZIN70: {
         if(_overrideCount < 0) {
@@ -356,6 +362,15 @@ void CounterManager_::decrementOverrideValue() {
   }
 }
 
+// ************************************************************
+// Clear up to current override digit
+// ************************************************************
+void CounterManager_::clearUpToCurrentOverrideDigit() {
+  debugMsgCmg("Clearing up to digit: " + String(_overrideCount));
+  for (int digit = 0 ; digit < _overrideCount ; digit++) {
+    _digitCurrentValues[digit] = 0;
+  }
+}
 
 // ************************************************************
 // Do a count - called once per second

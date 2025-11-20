@@ -524,11 +524,15 @@ void MenuManager_::serviceRootMenu() {
     if (getEncoderCCW()) {
       counterManager.pauseCounter();
       counterManager.incrementOverrideValue();
+      // Immediate update of the display to allow user to see change
+      oled.showStatusLine();
     }
     
     if (getEncoderCW()) {
       counterManager.pauseCounter();
       counterManager.decrementOverrideValue();
+      // Immediate update of the display to allow user to see change
+      oled.showStatusLine();
     }
 
     // When we are running, pressing the encoder pauses the counter

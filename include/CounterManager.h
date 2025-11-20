@@ -83,6 +83,7 @@ class CounterManager_
     void copyInitialRepetitionsToCurrent();
     config_set_t getCurrentConfigSet();
     config_set_t parseConfigString(String inputString);
+    void clearUpToCurrentOverrideDigit();
 
     bool _isOverride = false;
     bool _counterRunning = false;

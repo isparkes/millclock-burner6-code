@@ -17,7 +17,7 @@ void wpsInitConfig()
 // ************************************************************
 void flashMenuEvent(String titleTest, String flashText) {
     #ifdef FEATURE_MENU
-    menuManager.flashMenuMessage(titleTest, flashText);
+//    menuManager.flashMenuMessage(titleTest, flashText);
     #endif
 }
 

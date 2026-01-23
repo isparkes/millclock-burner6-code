@@ -8,9 +8,6 @@
 #include <ESPmDNS.h>
 #include "WebManager.h"
 #include <DNSServer.h>
-#ifdef FEATURE_MENU
-#include "MenuManager.h"
-#endif
 
 
 const byte    DNS_PORT                = 53;

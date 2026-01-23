@@ -23,24 +23,20 @@
 #define DATAPin   23
 #define LATCHPin  TX2
 
-// Encoder
-#define ENC_APin  14
-#define ENC_BPin  5
-#define ENC_BTN   16
-
-// Internally defined
-#define SDAint    21
-#define SCLint    22
-#define RX0Pin    3
-#define TX0Pin    1
+// I2C pins (also used by OLED menu system)
+#define SDAInt    21
+#define SCLInt    22
 
 // Indicator LEDs
 #define IND1Pin   13
 #define IND2Pin   12
 
-// Buttons
-#define BTN1Pin   15
-#define BTN2Pin   4
+// Menu system pin names (for clarity in menu code)
+#define ENCODER_CLK 5
+#define ENCODER_DT  14
+#define ENCODER_SW  16
+#define BTN_CONFIRM 15
+#define BTN_BACK    4
 
 // Sound
 #define BUZZER_PIN 25

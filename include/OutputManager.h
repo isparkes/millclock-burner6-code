@@ -52,6 +52,7 @@ class OutputManager_ {
     void updateOncePerSecond();
   private:
     uint32_t decodedValue;
+    bool blanked = false;
 
     uint32_t decodeFromNumberArray(byte valueToDecode);
     #ifdef OTM_EXTENDED_DEBUG

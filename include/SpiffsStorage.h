@@ -23,18 +23,12 @@ class SpiffsStorage_
 
   public:
     bool testMountSpiffs();
-    bool getSpiffsMounted();
 
     // These load/store the global objects, defined in globals.h
     bool getConfigFromSpiffs();
     void saveConfigToSpiffs();
     bool getStatsFromSpiffs();
     void saveStatsToSpiffs();
-
-    JsonObject& getConfigAsJsonObject();
-  private:
-    bool _spiffsMounted = false;
-    DynamicJsonBuffer _jsonBuffer;
 };
 
 extern SpiffsStorage_ &spiffsStorage;

@@ -8,7 +8,11 @@
 #include "OutputManager.h"
 #include "CounterManager.h"
 #ifdef FEATURE_MENU
-#include "MenuManager.h"
+#include "ESP32MenuSystem.h"
+#include "BurnerMenuConfiguration.h"
+
+// Create menu system instance (128x64 OLED)
+MenuSystem menuSystem(128, 64);
 #endif
 
 // ************************************************************
@@ -105,18 +109,27 @@ void setup() {
   }
 
   // -------------------------------------------------------------------------
-  
-  // Default pins SDA 21, SCL 22 Frequency 400kHz 
-  debugMsgMain("Start up I2C...");
-  Wire.begin(SDAint, SCLint, 400000L);
 
-  // -------------------------------------------------------------------------
-  
   #ifdef FEATURE_MENU
-  debugMsgMain("Starting OLED");
-  oled.setUp();
-  oled.clearDisplay();
-  menuManager.flashMenuMessage(CLOCK_MENU_TITLE, "Starting");
+  debugMsgMain("Starting Menu System");
+  // Initialize ESP32MenuSystem with pin definitions from Defs.h
+  if (!menuSystem.begin(SDAInt, SCLInt,
+                       ENCODER_CLK, ENCODER_DT,
+                       BTN_CONFIRM, BTN_BACK,
+                       ENCODER_SW)) {
+    debugMsgMain("Failed to initialize menu system!");
+  } else {
+    debugMsgMain("Menu system initialized successfully");
+
+    // Build menu structure
+    buildBurnerMenus();
+
+    // Set root menu and configure status screen
+    menuSystem.setRootMenu(mainMenu);
+    menuSystem.setStatusData(&burnerStatus);
+    menuSystem.setMenuTimeout(10000);  // 10 seconds
+    menuSystem.showStatusScreen();  // Start on status screen
+  }
   #endif
 
   // -------------------------------------------------------------------------
@@ -137,20 +150,9 @@ void setup() {
 
   // -------------------------------------------------------------------------
 
-  #ifdef FEATURE_MENU
-  debugMsgMain("Start up Menu Manager...");
-  menuManager.setupMenuManager();
-  oled.setUp();
-  oled.clearDisplay();
-  menuManager.flashMenuMessage(CLOCK_MENU_TITLE, "Welcome to the\nNixie Burner\n" + String(SOFTWARE_VERSION));
-  delay(2000);
-  #endif
-
-  // -------------------------------------------------------------------------
-  
-  // Emergency WiFi start
-  if ((WiFi.isConnected() == false) && (ENC_BTN) == LOW) {
-      debugMsgMain("Start open AP");
+  // Emergency WiFi start - hold encoder button during boot
+  if ((WiFi.isConnected() == false) && digitalRead(ENCODER_SW) == LOW) {
+      debugMsgMain("Start open AP (encoder button held)");
       wifiManager.openAccessPortal();
   }
   
@@ -189,7 +191,7 @@ void performOncePerLoop() {
   // -------------------------------------------------------------------------------
 
   #ifdef FEATURE_MENU
-  menuManager.menuOncePerLoop();
+  menuOncePerLoop();
   #endif
 
   // -------------------------------------------------------------------------------
@@ -242,9 +244,9 @@ void performOncePerSecondProcessing() {
 
   // Service the menu
   #ifdef FEATURE_MENU
-  menuManager.menuOncePerSecond();
+  menuOncePerSecond();
   #endif
-  
+
   // -------------------------------------------------------------------------------
 
   if (lastExpired != counterManager.isCounterExpired()) {

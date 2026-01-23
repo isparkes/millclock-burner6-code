@@ -113,11 +113,8 @@ void SpiffsStorage_::saveConfigToSpiffs()
   json["tubeBoardCount"] = cc->tubeBoardCount;
   
   File configFile = SPIFFS.open("/config/config.json", "w");
-  if (!configFile)
-  {
+  if (!configFile) {
     debugMsgSpf("Failed to open config file for writing");
-
-    configFile.close();
     return;
   }
   json.printTo(configFile);

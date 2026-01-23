@@ -24,14 +24,13 @@ volatile uint8_t dispBoardCount = 3; // The number of display boards
 // when the interrupt is reading it
 portMUX_TYPE timerMux1 = portMUX_INITIALIZER_UNLOCKED;
 
-// Used for clean handling of the encoder 
+// Used for clean handling of the encoder
 portMUX_TYPE encoderMux = portMUX_INITIALIZER_UNLOCKED;
 
 // ************************************************************
 // General values
 // ************************************************************
 unsigned long nowMillis = 0;
-unsigned long previousMillisWiFi = 0;
 unsigned long lastSecondStartMillis = 0;
 int lastSecond = 0;
 boolean triggeredThisSec = false;
@@ -43,8 +42,6 @@ bool blanked = false;
 
 bool doAutoReconnect = false;
 
-bool encoderToggle = false;
-
 // Our network name
 String uniqHostname;
 
@@ -52,9 +49,6 @@ String uniqHostname;
 AsyncWebServer server(80);
 
 String lastWiFiScan = "";
-
-unsigned long btn1ReadMillis = 0;
-unsigned long btn2ReadMillis = 0;
 
 bool lastExpired = false;
 

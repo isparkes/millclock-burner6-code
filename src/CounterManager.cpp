@@ -311,25 +311,17 @@ void CounterManager_::pauseCounter() {
 // ************************************************************
 void CounterManager_::incrementOverrideValue() {
   if (!_isOverride) {
-    debugMsgCmg("Setting obverride value");
+    debugMsgCmg("Setting override value");
     _overrideCount = _currentCount;
     _isOverride = true;
   } else {
-    _overrideCount++;
-    _currentCount = _overrideCount;
-    switch (_currentTubeType) {
-      case ZIN70: {
-        if(_overrideCount > 10) {
-          _overrideCount = 0;
-        }
-        break;
-      }
-      case ZIN18: {
-        if(_overrideCount > 9) {
-          _overrideCount = 0;
-        }
-        break;
-      }
+    // Determine max value based on tube type
+    int maxVal = (_currentTubeType == ZIN70) ? 10 : 9;
+
+    // Clamp to max (don't wrap)
+    if (_overrideCount < maxVal) {
+      _overrideCount++;
+      _currentCount = _overrideCount;
     }
   }
 }
@@ -339,25 +331,14 @@ void CounterManager_::incrementOverrideValue() {
 // ************************************************************
 void CounterManager_::decrementOverrideValue() {
   if (!_isOverride) {
-    debugMsgCmg("Setting obverride value");
+    debugMsgCmg("Setting override value");
     _overrideCount = _currentCount;
     _isOverride = true;
   } else {
-    _overrideCount--;
-    _currentCount = _overrideCount;
-    switch (_currentTubeType) {
-      case ZIN70: {
-        if(_overrideCount < 0) {
-          _overrideCount = 10;
-        }
-        break;
-      }
-      case ZIN18: {
-        if(_overrideCount < 0) {
-          _overrideCount = 9;
-        }
-        break;
-      }
+    // Clamp to min (don't wrap)
+    if (_overrideCount > 0) {
+      _overrideCount--;
+      _currentCount = _overrideCount;
     }
   }
 }
@@ -494,7 +475,7 @@ String CounterManager_::getCurrentCounterValString() {
   } else if(getCurrentCounterVal() == 10) {
     returnVal = "K";
   } else {
-    debugMsgCmg("Digit value out of rane: " + String(getCurrentCounterVal()));
+    debugMsgCmg("Digit value out of range: " + String(getCurrentCounterVal()));
     returnVal = "0";
   }
   return returnVal;

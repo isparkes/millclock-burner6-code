@@ -55,6 +55,7 @@ void WiFiEvent(WiFiEvent_t event, arduino_event_info_t info)
     debugMsgWfm("WPS Successfull, saving credentials. SSID: |" + WiFi.SSID() + "| password: |" + WiFi.psk() + "|");
     wifiManager.saveWiFiCredentials(WiFi.SSID(), WiFi.psk());
     esp_wifi_wps_disable();
+    wifiManager.setWPSRunning(false);
     flashMenuEvent("WPS Status", "WPS was successful\nPassword:\n"+WiFi.psk());
     break;
   case ARDUINO_EVENT_WPS_ER_FAILED:
@@ -76,18 +77,32 @@ void WiFiEvent(WiFiEvent_t event, arduino_event_info_t info)
   case ARDUINO_EVENT_WIFI_READY:
     debugMsgWfm("WiFi ready");
     break;
-//  case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
-//    debugMsgWfm("AP_STA Connected to station");
-//    break;
-//  case ARDUINO_EVENT_WIFI_AP_STAIPASSIGNED:
-//    debugMsgWfm("AP_STA Connected to station");
-//    debugMsgWfm("IP Address: " + WiFi.localIP().toString());
-//    break;
-//  case ARDUINO_EVENT_WIFI_AP_STOP:
-//    debugMsgWfm("AP stop");
-//    break;
+  case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
+    debugMsgWfm("AP: Station connected");
+    break;
+  case ARDUINO_EVENT_WIFI_AP_STAIPASSIGNED:
+    debugMsgWfm("AP: IP assigned to station");
+    break;
+  case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
+    debugMsgWfm("AP: Station disconnected");
+    break;
+  case ARDUINO_EVENT_WIFI_AP_STOP:
+    debugMsgWfm("AP: Stopped");
+    break;
+  case ARDUINO_EVENT_WIFI_STA_STOP:
+    debugMsgWfm("Station: Stopped");
+    break;
+  case ARDUINO_EVENT_WIFI_STA_AUTHMODE_CHANGE:
+    debugMsgWfm("Station: Auth mode changed");
+    break;
+  case ARDUINO_EVENT_WIFI_STA_LOST_IP:
+    debugMsgWfm("Station: Lost IP");
+    break;
+  case ARDUINO_EVENT_WPS_ER_PIN:
+    debugMsgWfm("WPS: PIN code received");
+    break;
   default:
-    debugMsgWfm("Wifi event (not mapped): " + String(event));
+    debugMsgWfm("Wifi event (unmapped): " + String(event));
     break;
   }
 }
@@ -111,13 +126,8 @@ void WiFiManager_::setUpWiFi() {
 // ************************************************************
 void WiFiManager_::startScanWiFiNetworks() {
   debugMsgWfm("Start wifi scan");
-  WiFi.onEvent(WiFiEvent, ARDUINO_EVENT_SC_SCAN_DONE);
-
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.disconnect();
-  delay(500);
-
-  WiFi.scanNetworks(true);
+  // Note: WiFiEvent already handles ARDUINO_EVENT_WIFI_SCAN_DONE
+  WiFi.scanNetworks(true);  // true = async scan
 }
 
 // ************************************************************
@@ -128,39 +138,26 @@ void WiFiManager_::processScanResults() {
   if (n == 0) {
     debugMsgWfm("no networks found");
     flashMenuEvent("Scan Done", "No WiFi\nnetworks\nfound.");
-  } else {
-    debugMsgWfm("");
+    lastWiFiScan = "";
+  } else if (n > 0) {
     debugMsgWfm(String(n) + " networks found");
     flashMenuEvent("Scan Done", "Found " + String(n) + " networks.");
+
+    // Build comma-separated list of SSIDs
+    String result = "";
+    for (int i = 0; i < n; ++i) {
+      if (result.length() > 0) {
+        result = result + ",";
+      }
+      result = result + WiFi.SSID(i);
+      debugMsgWfm("Found: " + WiFi.SSID(i) + " (" + String(WiFi.RSSI(i)) + "dBm)");
+    }
+    lastWiFiScan = result;
+    debugMsgWfm("Scan results stored: " + lastWiFiScan);
+  } else {
+    debugMsgWfm("Scan error: " + String(n));
   }
 }
-
-//     String result = "";
-//     for (int i = 0; i < n; ++i) {
-//       if (_ssidList.indexOf(WiFi.SSID(i)) > 0) {
-//         debugMsgWfm("Already have: " + WiFi.SSID(i));
-//       } else {
-//         debugMsgWfm("Add: " + WiFi.SSID(i));
-//         _ssidList = _ssidList + "," + String(WiFi.SSID(i));
-//       }
-//       #ifdef WFM_EXTENDED_DEBUG
-//       // Print SSID and RSSI for each network found
-//       bool encrypted = WiFi.encryptionType(i) == WIFI_AUTH_OPEN;
-//       String msg = String(i) + " : " + WiFi.SSID(i) + " (" + WiFi.RSSI(i) + ")";
-//       if (encrypted) {
-//         msg = msg + " *";
-//       }
-//       debugMsgWfm(msg);
-//       #endif
-//       if (result.length() > 0) {
-//         result = result + ",";
-//       }
-//       result = result + WiFi.SSID(i);
-//     }
-//     #ifdef WFM_EXTENDED_DEBUG
-//     debugMsgWfm("Returning network list: " + result);
-//     #endif
-//     lastWiFiScan = result;
 //   }
 // }
 
@@ -225,7 +222,11 @@ bool WiFiManager_::connectWithWPS() {
     esp_err_t retCodeStart = esp_wifi_wps_start(0);
     debugMsgWfm("WPS Start Result: " + String(retCodeStart));
 
-    return (retCodeEnable == 0 && retCodeStart == 0);
+    if (retCodeEnable == 0 && retCodeStart == 0) {
+      _isWPSRunning = true;
+      return true;
+    }
+    return false;
   } else {
     debugMsgWfm("Already connected, won't do WPS");
     return false;
@@ -238,8 +239,6 @@ bool WiFiManager_::connectWithWPS() {
 void WiFiManager_::openAccessPortal() {
   // Captive portal
   if (WiFi.status() != WL_CONNECTED) {
-    startScanWiFiNetworks();
-
     debugMsgWfm("");
     debugMsgWfm("Portal mode");
     WiFi.disconnect();
@@ -252,6 +251,9 @@ void WiFiManager_::openAccessPortal() {
     debugMsgWfm("Soft-AP IP address: " + WiFi.softAPIP().toString());
     flashMenuEvent("Portal", "Opened access\nportal at IP: " + WiFi.softAPIP().toString());
     _isOpenAP = true;
+
+    // Start WiFi scan after AP is set up
+    startScanWiFiNetworks();
   } else {
     flashMenuEvent("Portal", "WiFi is already\nconnected to:\n" + WiFi.SSID());
   }
@@ -396,3 +398,10 @@ WiFiManager_ &WiFiManager_::getInstance() {
 }
 
 WiFiManager_ &wifiManager = wifiManager.getInstance();
+
+// ************************************************************
+// Check if a WiFi scan is in progress
+// ************************************************************
+bool WiFiManager_::isScanning() {
+  return WiFi.scanComplete() == WIFI_SCAN_RUNNING;
+}

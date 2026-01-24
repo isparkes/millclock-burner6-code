@@ -216,30 +216,59 @@
 	<!-- /HTTP_STYLE -->
 	<!-- HTTP_SCRIPT -->
 	<script>
+		function clearNetworkList() {
+			document.getElementById("networkList").innerHTML = "";
+		}
+
 		function addElement(newHtml) {
 			const newDiv = document.createElement("div");
-			newDiv.innerHTML=newHtml;
+			newDiv.innerHTML = newHtml;
 			const currentDiv = document.getElementById("networkList");
 			currentDiv.appendChild(newDiv);
-		};
+		}
 
-		refreshNetworkList = function() {
+		function refreshNetworkList() {
 			fetch('/api/getWiFiNetworks')
-  				.then(response => response.json())
-  				.then(data => {
-//				  	console.log(data);
-					  data.SSIDs.split(',').forEach(network => {
-						let networkItem = "<a href='#p' onclick='c(this)'>"+network+"</a>";
-						addElement(networkItem);
-					});
-			  });
-		};
+				.then(response => response.json())
+				.then(data => {
+					clearNetworkList();
+					if (data.SSIDs && data.SSIDs.length > 0) {
+						data.SSIDs.split(',').forEach(network => {
+							if (network.length > 0) {
+								let networkItem = "<a href='#p' onclick='c(this)'>" + network + "</a>";
+								addElement(networkItem);
+							}
+						});
+					} else {
+						addElement("<i>No networks found</i>");
+					}
+				})
+				.catch(err => {
+					addElement("<i>Error loading networks</i>");
+				});
+		}
+
+		function scanNetworks() {
+			clearNetworkList();
+			addElement("<i>Scanning...</i>");
+			fetch('/api/scanWiFi')
+				.then(response => response.json())
+				.then(data => {
+					// Wait for scan to complete, then refresh list
+					setTimeout(refreshNetworkList, 3000);
+				})
+				.catch(err => {
+					clearNetworkList();
+					addElement("<i>Scan error</i>");
+				});
+		}
 
 		function c(l) {
 			document.getElementById('SSID').value = l.innerText || l.textContent;
-			document.getElementById('password').focus()
-		};
+			document.getElementById('password').focus();
+		}
 
+		// Load cached results on page load
 		refreshNetworkList();
 	</script>
 	<!-- /HTTP_SCRIPT -->
@@ -255,7 +284,7 @@
 		<hR>
 		<!-- SAMPLE -->
 		<h2>Networks</h2>
-		(refresh page if yours does not show up, or just type the name in the space below)
+		<button type='button' onclick='scanNetworks()'>Scan for Networks</button>
 		<hr>
 		<div id="networkList">
 		</div>

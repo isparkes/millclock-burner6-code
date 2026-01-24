@@ -67,15 +67,27 @@ public:
   virtual ~CaptiveRequestHandler() {}
 
   bool canHandle(AsyncWebServerRequest *request){
-//    debugMsgWbm("Handling URL: " + request->url());
-    if (request->url().startsWith("/api/")) return false;
-    if (request->url().startsWith("/utils/")) return false;
+    debugMsgWbm("canHandle URL: " + request->url());
+    if (request->url().startsWith("/api/")) {
+      debugMsgWbm("Skipping - API route");
+      return false;
+    }
+    if (request->url().startsWith("/utils/")) {
+      debugMsgWbm("Skipping - utils route");
+      return false;
+    }
     return true;
   }
 
   void handleRequest(AsyncWebServerRequest *request) {
-    debugMsgWbm("Sending captive page");
-    request->send(SPIFFS, "/web/portal.html", String(), false);
+    debugMsgWbm("Sending captive page for: " + request->url());
+    if (SPIFFS.exists("/web/portal.html")) {
+      debugMsgWbm("portal.html exists, sending...");
+      request->send(SPIFFS, "/web/portal.html", "text/html", false);
+    } else {
+      debugMsgWbm("ERROR: portal.html not found in SPIFFS!");
+      request->send(500, "text/plain", "Portal page not found");
+    }
   }
 };
 
@@ -83,22 +95,46 @@ public:
 // Open up the Portal Page
 // ************************************************************
 void WebManager_::beginPortal() {
-  debugMsgWbm("Setting up server endpoints for Portal");
+  debugMsgWbm("=== beginPortal() called ===");
   server.reset();
 
-  // serve the captive page
-  server.addHandler(new CaptiveRequestHandler()).setFilter(ON_AP_FILTER);
+  // Serve portal page at root
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    debugMsgWbm("Root path requested - serving portal");
+    if (SPIFFS.exists("/web/portal.html")) {
+      request->send(SPIFFS, "/web/portal.html", "text/html");
+    } else {
+      request->send(500, "text/plain", "portal.html not found");
+    }
+  });
 
-  // wifi credentials
+  // Simple test endpoint
+  server.on("/test", HTTP_GET, [](AsyncWebServerRequest *request) {
+    debugMsgWbm("TEST endpoint hit!");
+    request->send(200, "text/plain", "Server is working!");
+  });
+
+  // wifi credentials and scanning
   server.on("/api/postWiFiCredentials", HTTP_POST, postWiFiCredentialsHandler);
   server.on("/api/credentials", HTTP_GET, getCredentialsHandler);
   server.on("/api/getWiFiNetworks", HTTP_GET, getWiFiNetworksHandler);
+  server.on("/api/scanWiFi", HTTP_GET, [](AsyncWebServerRequest *request) {
+    debugMsgWbm("Starting WiFi scan...");
+    wifiManager.startScanWiFiNetworks();
+    request->send(200, "text/json", "{\"status\": \"scanning\"}");
+  });
 
   // Utilities
   server.on("/utils/resetwifi", HTTP_GET, resetWifiHandler);
   server.on("/utils/scanI2C", HTTP_GET, getI2CScanHandler);
   server.on("/utils/scanSPIFFS", HTTP_GET, getSPIFFSScanHandler);
   server.on("/utils/saveStats", HTTP_GET, saveStatsHandler);
+
+  // Catch-all for captive portal redirect (any other path)
+  server.onNotFound([](AsyncWebServerRequest *request) {
+    debugMsgWbm("Not found: " + request->url() + " - redirecting to portal");
+    request->redirect("/");
+  });
 
   // All your DNS requests are belong to us
   wifiManager.startDNSD();

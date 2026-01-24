@@ -66,8 +66,12 @@
                             <td id="softwareVersion"></td>
                         </tr>
                         <tr>
-                            <td>Counter counts (Autoreload <input class="form-check-input" type="checkbox" value="" id="refreshToggle" onclick="toggleRefresh()">)</td>
+                            <td>Current counts (Autoreload <input class="form-check-input" type="checkbox" value="" id="refreshToggle" onclick="toggleRefresh()">)</td>
                             <td id="counterValues"></td>
+                        </tr>
+                        <tr>
+                            <td>Initial counts</td>
+                            <td id="counterValuesInitial"></td>
                         </tr>
                         <tr>
                             <td>Tube Type</td>
@@ -153,8 +157,16 @@
 
     getCounterStatus = function() {
         getCounterStatusAPI().then(function(status){
-            $("#counterValues").text(status.counterValuesCurrent);
-            $("#tubeType").text(status.tubeType);  
+            // Determine digit count based on tube type (ZIN70=11, ZIN18=10)
+            var digitCount = (status.tubeType === "ZIN70") ? 11 : 10;
+
+            // Truncate counter values to show only the relevant digits
+            var currentValues = status.counterValuesCurrent.split(";").slice(0, digitCount).join(";");
+            var initialValues = status.counterValuesInitial.split(";").slice(0, digitCount).join(";");
+
+            $("#counterValues").text(currentValues);
+            $("#counterValuesInitial").text(initialValues);
+            $("#tubeType").text(status.tubeType);
             $("#repetitions").text(status.repetitions);
             $("#status").text(status.counterStatus);
 

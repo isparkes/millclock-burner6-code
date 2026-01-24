@@ -57,6 +57,7 @@
  typedef void (*StringCallback)(const char* value);
  typedef void (*StatusRenderCallback)(Adafruit_SH1106G* display, uint8_t width, uint8_t height);
  typedef bool (*StatusInputCallback)(ButtonEvent event);  // Return true to consume event
+ typedef void (*StatusEncoderCallback)(int delta);  // Called on encoder rotation in status screen
  
  // Status screen data structure
  struct StatusData {
@@ -82,16 +83,19 @@
        int maxValue;
        int step;
        const char* unit;
+       ActionCallback onSave;  // Optional callback when value is saved
      } numericData;
      struct {
        char* buffer;
        uint8_t maxLength;
        const char* charset;
+       ActionCallback onSave;  // Optional callback when value is saved
      } stringData;
      struct {
        bool* valuePtr;
        const char* option1;
        const char* option2;
+       ActionCallback onSave;  // Optional callback when value is saved
      } eitherOrData;
    } data;
    
@@ -140,9 +144,11 @@
    
    // Either-Or state
    bool editingEitherOr;
-   
+   MenuItem* tempEditItem = nullptr;  // Persistent storage for direct edit operations
+
    // Encoder state (volatile for ISR)
    volatile int encoderPosition;
+   int lastEncoderPos = 0;  // For tracking encoder delta in update loop
    volatile unsigned long lastEncoderTime;
    volatile uint8_t lastEncoderState;
    volatile int encoderPulseCount;  // Count pulses for sensitivity adjustment
@@ -172,6 +178,7 @@
    StatusData* statusData = NULL;
    StatusRenderCallback statusRenderCallback = NULL;
    StatusInputCallback statusInputCallback = NULL;
+  StatusEncoderCallback statusEncoderCallback = NULL;
 
    // Private methods
    void updateEncoder();
@@ -210,12 +217,15 @@
    // Add menu items
    MenuItem* addSubmenu(MenuItem* parent, const char* label, MenuItem* submenu);
    MenuItem* addAction(MenuItem* parent, const char* label, ActionCallback callback);
-   MenuItem* addNumericValue(MenuItem* parent, const char* label, int* valuePtr, 
-                            int minVal, int maxVal, int step = 1, const char* unit = "");
-   MenuItem* addStringValue(MenuItem* parent, const char* label, char* buffer, 
-                           uint8_t maxLen, const char* charset = NULL);
+   MenuItem* addNumericValue(MenuItem* parent, const char* label, int* valuePtr,
+                            int minVal, int maxVal, int step = 1, const char* unit = "",
+                            ActionCallback onSave = NULL);
+   MenuItem* addStringValue(MenuItem* parent, const char* label, char* buffer,
+                           uint8_t maxLen, const char* charset = NULL,
+                           ActionCallback onSave = NULL);
    MenuItem* addEitherOr(MenuItem* parent, const char* label, bool* valuePtr,
-                        const char* opt1 = "YES", const char* opt2 = "NO");
+                        const char* opt1 = "YES", const char* opt2 = "NO",
+                        ActionCallback onSave = NULL);
    MenuItem* addInfo(MenuItem* parent, const char* label);
    
    // Main loop
@@ -231,9 +241,14 @@
    void setStatusData(StatusData* data);
    void setStatusRenderCallback(StatusRenderCallback callback);
    void setStatusInputCallback(StatusInputCallback callback);
+   void setStatusEncoderCallback(StatusEncoderCallback callback);
    void showStatusScreen();
    void showMenu();
    
+   // Direct editing (for status screen overlays)
+   void enterEitherOrEdit(bool* valuePtr, const char* opt1, const char* opt2,
+                         ActionCallback onConfirm = NULL, const char* label = "Select");
+
    // Utility
    void navigateToMenu(MenuItem* menu);
    void resetActivity();  // Reset screen saver timer

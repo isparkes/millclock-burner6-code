@@ -48,8 +48,15 @@ class WiFiManager_ {
     void stopDNSD();
     void manageDNSInOpenAP();
 
+    // Status queries
+    bool isOpenAP() { return _isOpenAP; }
+    bool isScanning();
+    bool isWPSRunning() { return _isWPSRunning; }
+    void setWPSRunning(bool running) { _isWPSRunning = running; }
+
   private:
     bool _isOpenAP = false;
+    bool _isWPSRunning = false;
     std::unique_ptr<DNSServer>        dnsServer;    
 
     // For resolving names to esp32xxxxx.local

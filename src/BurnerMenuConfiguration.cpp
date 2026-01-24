@@ -10,6 +10,7 @@
 #include "SpiffsStorage.h"
 #include "DebugManager.h"
 #include <Arduino.h>
+#include "WiFi.h"
 
 // External references
 extern MenuSystem menuSystem;
@@ -19,6 +20,11 @@ MenuItem* mainMenu;
 MenuItem* burnMenu;
 MenuItem* wifiMenu;
 MenuItem* systemMenu;
+
+// Submenu wrapper pointers (for dynamic rebuilding)
+MenuItem* burnMenuWrapper = NULL;
+MenuItem* wifiMenuWrapper = NULL;
+MenuItem* systemMenuWrapper = NULL;
 
 // Temporary variables for dynamic menu items
 int digit0Time, digit1Time, digit2Time, digit3Time, digit4Time;
@@ -40,6 +46,9 @@ static const char* statusLabel = "Stopped";
 
 // Static variables for menu loop functions
 static unsigned long _lastStatusUpdate = 0;
+
+// Forward declarations for callbacks
+void handleStatusEncoder(int delta);
 
 // ============================================================================
 // Callback functions - Main Menu
@@ -92,21 +101,20 @@ void toggleTubeType() {
   buildBurnMenuDynamic();
 }
 
-void saveDigit0() { counterManager.setDigitTime(0, digit0Time); buildBurnMenuDynamic(); }
-void saveDigit1() { counterManager.setDigitTime(1, digit1Time); buildBurnMenuDynamic(); }
-void saveDigit2() { counterManager.setDigitTime(2, digit2Time); buildBurnMenuDynamic(); }
-void saveDigit3() { counterManager.setDigitTime(3, digit3Time); buildBurnMenuDynamic(); }
-void saveDigit4() { counterManager.setDigitTime(4, digit4Time); buildBurnMenuDynamic(); }
-void saveDigit5() { counterManager.setDigitTime(5, digit5Time); buildBurnMenuDynamic(); }
-void saveDigit6() { counterManager.setDigitTime(6, digit6Time); buildBurnMenuDynamic(); }
-void saveDigit7() { counterManager.setDigitTime(7, digit7Time); buildBurnMenuDynamic(); }
-void saveDigit8() { counterManager.setDigitTime(8, digit8Time); buildBurnMenuDynamic(); }
-void saveDigit9() { counterManager.setDigitTime(9, digit9Time); buildBurnMenuDynamic(); }
-void saveDigitK() { counterManager.setDigitTime(10, digitKTime); buildBurnMenuDynamic(); }
+void saveDigit0() { counterManager.setDigitTime(0, digit0Time); }
+void saveDigit1() { counterManager.setDigitTime(1, digit1Time); }
+void saveDigit2() { counterManager.setDigitTime(2, digit2Time); }
+void saveDigit3() { counterManager.setDigitTime(3, digit3Time); }
+void saveDigit4() { counterManager.setDigitTime(4, digit4Time); }
+void saveDigit5() { counterManager.setDigitTime(5, digit5Time); }
+void saveDigit6() { counterManager.setDigitTime(6, digit6Time); }
+void saveDigit7() { counterManager.setDigitTime(7, digit7Time); }
+void saveDigit8() { counterManager.setDigitTime(8, digit8Time); }
+void saveDigit9() { counterManager.setDigitTime(9, digit9Time); }
+void saveDigitK() { counterManager.setDigitTime(10, digitKTime); }
 
 void saveCycles() {
   counterManager.setRepetitions(cyclesValue);
-  buildBurnMenuDynamic();
 }
 
 void saveDigitValues() {
@@ -213,13 +221,17 @@ void debugOn10mins() {
 // ============================================================================
 
 void buildBurnMenuDynamic() {
-  // Clear existing burn menu
-  if (burnMenu != NULL) {
-    // Note: ESP32MenuSystem doesn't have a clearMenu function yet
-    // We'll recreate the menu
-  }
+  // Track if this is a rebuild (wrapper already exists)
+  bool isRebuild = (burnMenuWrapper != NULL);
 
+  // Create new burn menu
   burnMenu = menuSystem.createMenu("Burn Menu");
+
+  // Update wrapper's child pointer if wrapper exists (for dynamic rebuilding)
+  if (isRebuild) {
+    burnMenuWrapper->child = burnMenu;
+    burnMenu->parent = burnMenuWrapper;
+  }
 
   if (counterManager.isCounterRunning()) {
     menuSystem.addAction(burnMenu, "Stop Burn", stopBurn);
@@ -241,55 +253,65 @@ void buildBurnMenuDynamic() {
     }
   }
 
-  // Add digit time settings
+  // Add digit time settings with save callbacks
   digit0Time = counterManager.getDigitTime(0);
-  menuSystem.addNumericValue(burnMenu, "Digit 0", &digit0Time, 0, 999, 1, "s");
+  menuSystem.addNumericValue(burnMenu, "Digit 0", &digit0Time, 0, 999, 1, "s", saveDigit0);
 
   digit1Time = counterManager.getDigitTime(1);
-  menuSystem.addNumericValue(burnMenu, "Digit 1", &digit1Time, 0, 999, 1, "s");
+  menuSystem.addNumericValue(burnMenu, "Digit 1", &digit1Time, 0, 999, 1, "s", saveDigit1);
 
   digit2Time = counterManager.getDigitTime(2);
-  menuSystem.addNumericValue(burnMenu, "Digit 2", &digit2Time, 0, 999, 1, "s");
+  menuSystem.addNumericValue(burnMenu, "Digit 2", &digit2Time, 0, 999, 1, "s", saveDigit2);
 
   digit3Time = counterManager.getDigitTime(3);
-  menuSystem.addNumericValue(burnMenu, "Digit 3", &digit3Time, 0, 999, 1, "s");
+  menuSystem.addNumericValue(burnMenu, "Digit 3", &digit3Time, 0, 999, 1, "s", saveDigit3);
 
   digit4Time = counterManager.getDigitTime(4);
-  menuSystem.addNumericValue(burnMenu, "Digit 4", &digit4Time, 0, 999, 1, "s");
+  menuSystem.addNumericValue(burnMenu, "Digit 4", &digit4Time, 0, 999, 1, "s", saveDigit4);
 
   digit5Time = counterManager.getDigitTime(5);
-  menuSystem.addNumericValue(burnMenu, "Digit 5", &digit5Time, 0, 999, 1, "s");
+  menuSystem.addNumericValue(burnMenu, "Digit 5", &digit5Time, 0, 999, 1, "s", saveDigit5);
 
   digit6Time = counterManager.getDigitTime(6);
-  menuSystem.addNumericValue(burnMenu, "Digit 6", &digit6Time, 0, 999, 1, "s");
+  menuSystem.addNumericValue(burnMenu, "Digit 6", &digit6Time, 0, 999, 1, "s", saveDigit6);
 
   digit7Time = counterManager.getDigitTime(7);
-  menuSystem.addNumericValue(burnMenu, "Digit 7", &digit7Time, 0, 999, 1, "s");
+  menuSystem.addNumericValue(burnMenu, "Digit 7", &digit7Time, 0, 999, 1, "s", saveDigit7);
 
   digit8Time = counterManager.getDigitTime(8);
-  menuSystem.addNumericValue(burnMenu, "Digit 8", &digit8Time, 0, 999, 1, "s");
+  menuSystem.addNumericValue(burnMenu, "Digit 8", &digit8Time, 0, 999, 1, "s", saveDigit8);
 
   digit9Time = counterManager.getDigitTime(9);
-  menuSystem.addNumericValue(burnMenu, "Digit 9", &digit9Time, 0, 999, 1, "s");
+  menuSystem.addNumericValue(burnMenu, "Digit 9", &digit9Time, 0, 999, 1, "s", saveDigit9);
 
   if (cc->tubeType == ZIN70) {
     digitKTime = counterManager.getDigitTime(10);
-    menuSystem.addNumericValue(burnMenu, "Digit K", &digitKTime, 0, 999, 1, "s");
+    menuSystem.addNumericValue(burnMenu, "Digit K", &digitKTime, 0, 999, 1, "s", saveDigitK);
   }
 
   cyclesValue = counterManager.getRepetitions();
-  menuSystem.addNumericValue(burnMenu, "Cycles", &cyclesValue, 1, 99, 1, "");
+  menuSystem.addNumericValue(burnMenu, "Cycles", &cyclesValue, 1, 99, 1, "", saveCycles);
 
   menuSystem.addAction(burnMenu, "Save All", saveDigitValues);
+
+  // Navigate to the new menu AFTER items are added (only on rebuild)
+  if (isRebuild) {
+    menuSystem.navigateToMenu(burnMenu);
+  }
 }
 
 void buildWifiMenuDynamic() {
-  // Clear and rebuild WiFi menu based on connection status
-  if (wifiMenu != NULL) {
-    // Recreate the menu
-  }
+  // Track if this is a rebuild (wrapper already exists)
+  bool isRebuild = (wifiMenuWrapper != NULL);
 
+  // Create new WiFi menu
   wifiMenu = menuSystem.createMenu("WiFi");
+
+  // Update wrapper's child pointer if wrapper exists (for dynamic rebuilding)
+  if (isRebuild) {
+    wifiMenuWrapper->child = wifiMenu;
+    wifiMenu->parent = wifiMenuWrapper;
+  }
 
   if (WiFi.isConnected()) {
     menuSystem.addAction(wifiMenu, "Disconnect", disconnectWifi);
@@ -311,14 +333,26 @@ void buildWifiMenuDynamic() {
     menuSystem.addStringValue(wifiMenu, "SSID", wifiSSIDBuffer, 32);
     menuSystem.addStringValue(wifiMenu, "Password", wifiPasswordBuffer, 64);
   }
+
+  // Navigate to the new menu AFTER items are added (only on rebuild)
+  if (isRebuild) {
+    menuSystem.navigateToMenu(wifiMenu);
+  }
 }
 
 void buildSystemMenuDynamic() {
-  if (systemMenu != NULL) {
-    // Recreate the menu
+  // Track if this is a rebuild (wrapper already exists)
+  bool isRebuild = (systemMenuWrapper != NULL);
+
+  // Create new System menu
+  systemMenu = menuSystem.createMenu("System");
+
+  // Update wrapper's child pointer if wrapper exists (for dynamic rebuilding)
+  if (isRebuild) {
+    systemMenuWrapper->child = systemMenu;
+    systemMenu->parent = systemMenuWrapper;
   }
 
-  systemMenu = menuSystem.createMenu("System");
   menuSystem.addAction(systemMenu, "Restart", restartDevice);
   menuSystem.addAction(systemMenu, "Save Config", saveConfig);
 
@@ -330,6 +364,11 @@ void buildSystemMenuDynamic() {
   #endif
 
   menuSystem.addAction(systemMenu, "Reset WiFi", resetWiFiInfo);
+
+  // Navigate to the new menu AFTER items are added (only on rebuild)
+  if (isRebuild) {
+    menuSystem.navigateToMenu(systemMenu);
+  }
 }
 
 // ============================================================================
@@ -342,17 +381,18 @@ void buildBurnerMenus() {
   buildWifiMenuDynamic();
   buildSystemMenuDynamic();
 
-  // Create main menu and add submenus
+  // Create main menu and add submenus (store wrapper references for dynamic rebuilding)
   mainMenu = menuSystem.createMenu("MAIN MENU");
-  menuSystem.addSubmenu(mainMenu, "Burn", burnMenu);
-  menuSystem.addSubmenu(mainMenu, "WiFi", wifiMenu);
-  menuSystem.addSubmenu(mainMenu, "System", systemMenu);
+  burnMenuWrapper = menuSystem.addSubmenu(mainMenu, "Burn", burnMenu);
+  wifiMenuWrapper = menuSystem.addSubmenu(mainMenu, "WiFi", wifiMenu);
+  systemMenuWrapper = menuSystem.addSubmenu(mainMenu, "System", systemMenu);
   menuSystem.addAction(mainMenu, "Menu Off", menuOff);
-  menuSystem.addInfo(mainMenu, "v1.0");
+  menuSystem.addInfo(mainMenu, SOFTWARE_VERSION);
 
   // Register custom status screen callbacks
   menuSystem.setStatusRenderCallback(renderBurnerStatus);
   menuSystem.setStatusInputCallback(handleStatusInput);
+  menuSystem.setStatusEncoderCallback(handleStatusEncoder);
 }
 
 // ============================================================================
@@ -410,17 +450,15 @@ void renderBurnerStatus(Adafruit_SH1106G* display, uint8_t width, uint8_t height
     display->print(valStr);
   }
 
-  // Status bar at bottom (like old OLED) - two rows
+  // Status bar at bottom - two rows
   const uint8_t boxHeight = 22;
   const uint8_t boxY = height - boxHeight;
   display->drawRect(0, boxY, width, boxHeight, SH110X_WHITE);
 
   display->setTextSize(1);
 
-  // Row 1: WiFi, Run state, Tube type, Current digit
-  display->setCursor(2, boxY + 2);
-  display->print(WiFi.isConnected() ? "W" : "w");
-  display->print(" ");
+  // Row 1: Run state, Tube type, Current digit
+  display->setCursor(4, boxY + 2);
 
   // Run indicator: O/P/R/X/-
   if (counterManager.isCounterExpired()) {
@@ -434,19 +472,43 @@ void renderBurnerStatus(Adafruit_SH1106G* display, uint8_t width, uint8_t height
       display->print("R");
     }
   } else {
-    display->print("-");
+    display->print("S");
   }
   display->print(" T:");
   display->print((cc->tubeType == ZIN70) ? 70 : 18);
   display->print(" D:");
   display->print(counterManager.getCurrentCounterValString());
-
-  // Row 2: Repetitions
-  display->setCursor(2, boxY + 12);
-  display->print("R:");
+  display->print(" R:");
   display->print(counterManager.getRepetitionsCurrent());
   display->print("/");
   display->print(counterManager.getRepetitions());
+
+  // Row 2: WiFi status with activity indicators
+  display->setCursor(4, boxY + 12);
+  if (WiFi.isConnected()) {
+    display->print("IP: ");
+    display->print(WiFi.localIP().toString());
+  } else {
+    // Show what's happening when not connected
+    bool hasActivity = false;
+    if (wifiManager.isScanning()) {
+      display->print("Scan WiFi SSIDs");
+      hasActivity = true;
+    }
+    if (wifiManager.isWPSRunning()) {
+      if (hasActivity) display->print(" ");
+      display->print("WPS Connecting");
+      hasActivity = true;
+    }
+    if (wifiManager.isOpenAP()) {
+      if (hasActivity) display->print(" ");
+      display->print("AP Open: 192.168.4.1");
+      hasActivity = true;
+    }
+    if (!hasActivity) {
+      display->print("WiFi off");
+    }
+  }
 }
 
 // Handle button input on status screen
@@ -476,7 +538,16 @@ bool handleStatusInput(ButtonEvent event) {
       break;
 
     case BTN_ENCODER_CLICK:
-      // Encoder click: Let default handling enter menu
+      // Encoder click: Toggle pause/resume
+      if (counterManager.isCounterRunning()) {
+        if (counterManager.isCounterPaused()) {
+          resumeBurn();
+        } else {
+          pauseBurn();
+        }
+        return true;
+      }
+      // If not running, let default handling enter menu
       return false;
 
     default:
@@ -485,22 +556,45 @@ bool handleStatusInput(ButtonEvent event) {
   return false;
 }
 
-void handleBurnModeInput() {
-  // Note: Special burn mode input handling could be added here
-  // For example, when burning is active on the status screen:
-  // - Encoder turn: pause and select digit override
-  // - Encoder press: toggle pause/resume
-  //
-  // For now, let the ESP32MenuSystem handle all input
-  // Users can press encoder to enter menu, then use burn menu
+// Static variable for either-or tube type selection (must persist beyond function call)
+static bool tubeTypeSelection = false;
+
+// Callback to apply tube type selection
+void applyTubeTypeSelection() {
+  tube_type_t newType = tubeTypeSelection ? ZIN70 : ZIN18;
+  counterManager.setTubeType(newType);
+  cc->tubeType = newType;
+  buildBurnMenuDynamic();
+  debugMsgMnm("[ACTION] Tube type set to: " + String(tubeTypeSelection ? "ZIN70" : "ZIN18"));
+}
+
+// Handle encoder rotation on status screen
+// Encoder turn: pause if running, then select digit override
+void handleStatusEncoder(int delta) {
+  // If we are not running, select the tube type
+  if (!counterManager.isCounterRunning()) {
+    tubeTypeSelection = (cc->tubeType == ZIN70);
+    menuSystem.enterEitherOrEdit(&tubeTypeSelection, "ZIN70", "ZIN18", applyTubeTypeSelection, "Select Tube Type");
+    return;  // Don't process further - we're now in either-or edit mode
+  }
+
+  // Pause if currently running (not already paused)
+  if (!counterManager.isCounterPaused()) {
+    pauseBurn();
+    debugMsgMnm("[STATUS] Auto-paused for override");
+  }
+
+  // Adjust override digit
+  if (delta > 0) {
+    counterManager.incrementOverrideValue();
+  } else if (delta < 0) {
+    counterManager.decrementOverrideValue();
+  }
 }
 
 void menuOncePerLoop() {
   // Update the menu system (handles encoder, buttons, display)
   menuSystem.update();
-
-  // Handle special burn mode logic
-  handleBurnModeInput();
 
   // Periodically update status (every 100ms)
   if (millis() - _lastStatusUpdate > 100) {

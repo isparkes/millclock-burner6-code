@@ -435,19 +435,29 @@ void getCredentialsHandler(AsyncWebServerRequest *request) {
 // ************************************************************
 void postWiFiCredentialsHandler(AsyncWebServerRequest *request) {
   debugMsgUtl("Got api wifi credentials POST request");
-  
-//  #ifdef DEBUG
-//  dumpArgs(request);
-//  #endif
+  debugMsgUtl("Request method: " + String(request->method()));
+  debugMsgUtl("Content type: " + request->contentType());
+  debugMsgUtl("Args count: " + String(request->args()));
+
+  // Debug: list all arguments
+  for (int i = 0; i < request->args(); i++) {
+    debugMsgUtl("Arg " + String(i) + ": " + request->argName(i) + " = " + request->arg(i));
+  }
 
   String newSSID = "";
   String newPassword = "";
 
   if (request->hasArg("SSID")) {
     newSSID = request->arg("SSID");
+    debugMsgUtl("Found SSID: " + newSSID);
+  } else {
+    debugMsgUtl("SSID arg not found");
   }
   if (request->hasArg("password")) {
     newPassword = request->arg("password");
+    debugMsgUtl("Found password: " + newPassword);
+  } else {
+    debugMsgUtl("password arg not found");
   }
 
   if (newSSID.length() > 0 && newPassword.length() > 0) {
@@ -480,11 +490,9 @@ void getWiFiNetworksHandler(AsyncWebServerRequest *request) {
     debugMsgUtl("Scan aborted because we are already connected");
   } else {
     AsyncWebServerResponse* response = request->beginResponse(200, "text/json", "{\"connected\": \"false\", \"SSIDs\": \"" + lastWiFiScan + "\"}");
-    request->send(response);        
-    debugMsgUtl("Scan done");
-
-    // trigger a new scan
-    wifiManager.startScanWiFiNetworks();
+    request->send(response);
+    debugMsgUtl("Returning cached scan results: " + lastWiFiScan);
+    // Removed automatic rescan - scan is done when portal opens
   }
 }
 

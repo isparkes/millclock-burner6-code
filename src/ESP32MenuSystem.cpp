@@ -29,6 +29,9 @@
    if (display) {
      delete display;
    }
+   if (tempEditItem) {
+     delete tempEditItem;
+   }
  }
  
  // ISR Handlers
@@ -180,7 +183,8 @@
  
  // Add numeric value item
  MenuItem* MenuSystem::addNumericValue(MenuItem* parent, const char* label, int* valuePtr,
-                                      int minVal, int maxVal, int step, const char* unit) {
+                                      int minVal, int maxVal, int step, const char* unit,
+                                      ActionCallback onSave) {
    MenuItem* item = new MenuItem(label, MENU_ITEM_NUMERIC_VALUE);
    item->parent = parent;
    item->data.numericData.valuePtr = valuePtr;
@@ -188,6 +192,7 @@
    item->data.numericData.maxValue = maxVal;
    item->data.numericData.step = step;
    item->data.numericData.unit = unit;
+   item->data.numericData.onSave = onSave;
    
    if (parent->child == NULL) {
      parent->child = item;
@@ -202,13 +207,15 @@
  
  // Add string value item
  MenuItem* MenuSystem::addStringValue(MenuItem* parent, const char* label, char* buffer,
-                                     uint8_t maxLen, const char* charset) {
+                                     uint8_t maxLen, const char* charset,
+                                     ActionCallback onSave) {
    MenuItem* item = new MenuItem(label, MENU_ITEM_STRING_VALUE);
    item->parent = parent;
    item->data.stringData.buffer = buffer;
    item->data.stringData.maxLength = maxLen;
    item->data.stringData.charset = charset ? charset : DEFAULT_CHARSET;
-   
+   item->data.stringData.onSave = onSave;
+
    if (parent->child == NULL) {
      parent->child = item;
    } else {
@@ -216,19 +223,21 @@
      while (last->next) last = last->next;
      last->next = item;
    }
-   
+
    return item;
  }
- 
+
  // Add either-or item
  MenuItem* MenuSystem::addEitherOr(MenuItem* parent, const char* label, bool* valuePtr,
-                                  const char* opt1, const char* opt2) {
+                                  const char* opt1, const char* opt2,
+                                  ActionCallback onSave) {
    MenuItem* item = new MenuItem(label, MENU_ITEM_EITHER_OR);
    item->parent = parent;
    item->data.eitherOrData.valuePtr = valuePtr;
    item->data.eitherOrData.option1 = opt1;
    item->data.eitherOrData.option2 = opt2;
-   
+   item->data.eitherOrData.onSave = onSave;
+
    if (parent->child == NULL) {
      parent->child = item;
    } else {
@@ -236,7 +245,7 @@
      while (last->next) last = last->next;
      last->next = item;
    }
-   
+
    return item;
  }
  
@@ -376,10 +385,15 @@
    switch (item->type) {
      case MENU_ITEM_SUBMENU:
        if (item->child) {
-         Serial.print("[MENU] Entering submenu: ");
-         debugMsgMnm(item->label);
-         currentMenu = item;
-         selectedItem = item->child;
+         debugMsgMnm("[MENU] Entering submenu: " + String(item->label));
+         // If child is a submenu container (created with createMenu), skip to its children
+         if (item->child->type == MENU_ITEM_SUBMENU && item->child->child) {
+           currentMenu = item->child;
+           selectedItem = item->child->child;
+         } else {
+           currentMenu = item;
+           selectedItem = item->child;
+         }
          selectedIndex = 0;
          scrollOffset = 0;
        }
@@ -387,26 +401,24 @@
        
      case MENU_ITEM_ACTION:
        if (item->data.actionCallback) {
-         Serial.print("[ACTION] Executing callback for: ");
-         debugMsgMnm(item->label);
+         debugMsgMnm("[ACTION] Executing callback for: " + String(item->label));
          item->data.actionCallback();
        }
        break;
        
      case MENU_ITEM_NUMERIC_VALUE:
-       Serial.print("[NUMERIC] Editing: ");
-       debugMsgMnm(item->label);
+       debugMsgMnm("[NUMERIC] Editing: " + String(item->label));
        currentMode = MODE_NUMERIC_VALUE;
        editingValue = *(item->data.numericData.valuePtr);
        editingMin = item->data.numericData.minValue;
        editingMax = item->data.numericData.maxValue;
        editingStep = item->data.numericData.step;
        encoderPosition = 0;
+       lastEncoderPos = 0;
        break;
        
      case MENU_ITEM_STRING_VALUE:
-       Serial.print("[STRING] Editing: ");
-       debugMsgMnm(item->label);
+       debugMsgMnm("[STRING] Editing: " + String(item->label));
        currentMode = MODE_STRING_COMPOSITION;
        editingBuffer = item->data.stringData.buffer;
        editingMaxLen = item->data.stringData.maxLength;
@@ -414,19 +426,19 @@
        editingCursorPos = strlen(editingBuffer);
        editingCharIndex = 0;
        encoderPosition = 0;
+       lastEncoderPos = 0;
        break;
-       
+
      case MENU_ITEM_EITHER_OR:
-       Serial.print("[EITHER-OR] Editing: ");
-       debugMsgMnm(item->label);
+       debugMsgMnm("[EITHER-OR] Editing: " + String(item->label));
        currentMode = MODE_EITHER_OR;
        editingEitherOr = *(item->data.eitherOrData.valuePtr);
        encoderPosition = 0;
+       lastEncoderPos = 0;
        break;
-       
+
      case MENU_ITEM_INFO:
-       Serial.print("[INFO] Displayed: ");
-       debugMsgMnm(item->label);
+       debugMsgMnm("[INFO] Displayed: " + String(item->label));
        break;
    }
  }
@@ -435,11 +447,12 @@
  void MenuSystem::exitCurrentMode() {
    currentMode = MODE_MENU_NAVIGATION;
    encoderPosition = 0;
+   lastEncoderPos = 0;
  }
  
  // Main update loop
  void MenuSystem::update() {
-   static int lastEncoderPos = 0;
+   // lastEncoderPos is now a class member to allow syncing when entering edit modes
    
    // Check for screen saver timeout
    if (screenSaverTimeout > 0) {
@@ -532,6 +545,13 @@
        case MODE_EITHER_OR:
          editingEitherOr = !editingEitherOr;
          break;
+
+       case MODE_STATUS_SCREEN:
+         // Call encoder callback if configured
+         if (statusEncoderCallback) {
+           statusEncoderCallback(delta);
+         }
+         break;
      }
    }
    
@@ -562,55 +582,70 @@
    switch (event) {
      case BTN_CONFIRM_CLICK:
        if (currentMode == MODE_MENU_NAVIGATION) {
-         Serial.print("[MENU] Entering item: ");
-         debugMsgMnm(selectedItem ? selectedItem->label : "NULL");
+         debugMsgMnm("[MENU] Entering item: " + String(selectedItem ? selectedItem->label : "NULL"));
          enterMenuItem(selectedItem);
        } else if (currentMode == MODE_NUMERIC_VALUE) {
-         Serial.print("[VALUE] Saving numeric value: ");
-         debugMsgMnm(String(editingValue));
+         debugMsgMnm("[VALUE] Saving numeric value: " + String(editingValue));
          *(selectedItem->data.numericData.valuePtr) = editingValue;
+         // Call onSave callback if provided
+         if (selectedItem->data.numericData.onSave) {
+           selectedItem->data.numericData.onSave();
+         }
          exitCurrentMode();
        } else if (currentMode == MODE_STRING_COMPOSITION) {
          // Confirm button finishes string entry
-         Serial.print("[STRING] Saving string: ");
-         debugMsgMnm(editingBuffer);
+         debugMsgMnm("[STRING] Saving string: " + String(editingBuffer));
+         // Call onSave callback if provided
+         if (selectedItem->data.stringData.onSave) {
+           selectedItem->data.stringData.onSave();
+         }
          exitCurrentMode();
        } else if (currentMode == MODE_EITHER_OR) {
-         Serial.print("[EITHER-OR] Selected: ");
-         debugMsgMnm(editingEitherOr ? selectedItem->data.eitherOrData.option1 : selectedItem->data.eitherOrData.option2);
+         debugMsgMnm("[EITHER-OR] Selected: " + String(editingEitherOr ? selectedItem->data.eitherOrData.option1 : selectedItem->data.eitherOrData.option2));
          *(selectedItem->data.eitherOrData.valuePtr) = editingEitherOr;
+         // Call onSave callback if provided
+         if (selectedItem->data.eitherOrData.onSave) {
+           selectedItem->data.eitherOrData.onSave();
+         }
          exitCurrentMode();
        }
        break;
-     
+
      case BTN_ENCODER_CLICK:  // Encoder button adds character or selects in other modes
        if (currentMode == MODE_MENU_NAVIGATION) {
-         Serial.print("[MENU] Entering item: ");
-         debugMsgMnm(selectedItem ? selectedItem->label : "NULL");
+         debugMsgMnm("[MENU] Entering item: " + String(selectedItem ? selectedItem->label : "NULL"));
          enterMenuItem(selectedItem);
        } else if (currentMode == MODE_NUMERIC_VALUE) {
-         Serial.print("[VALUE] Saving numeric value: ");
-         debugMsgMnm(String(editingValue));
+         debugMsgMnm("[VALUE] Saving numeric value: " + String(editingValue));
          *(selectedItem->data.numericData.valuePtr) = editingValue;
+         // Call onSave callback if provided
+         if (selectedItem->data.numericData.onSave) {
+           selectedItem->data.numericData.onSave();
+         }
          exitCurrentMode();
        } else if (currentMode == MODE_STRING_COMPOSITION) {
          // Encoder button adds the current character
          if (editingCursorPos < editingMaxLen - 1) {
            editingBuffer[editingCursorPos] = editingCharset[editingCharIndex];
-           Serial.print("[STRING] Added character: ");
-           debugMsgMnm(String(editingCharset[editingCharIndex]));
+           debugMsgMnm("[STRING] Added character: " + String(editingCharset[editingCharIndex]));
            editingCursorPos++;
            editingBuffer[editingCursorPos] = '\0';
            editingCharIndex = 0;
          } else {
-           Serial.print("[STRING] Max length reached, saving: ");
-           debugMsgMnm(editingBuffer);
+           debugMsgMnm("[STRING] Max length reached, saving: " + String(editingBuffer));
+           // Call onSave callback if provided
+           if (selectedItem->data.stringData.onSave) {
+             selectedItem->data.stringData.onSave();
+           }
            exitCurrentMode();
          }
        } else if (currentMode == MODE_EITHER_OR) {
-         Serial.print("[EITHER-OR] Selected: ");
-         debugMsgMnm(editingEitherOr ? selectedItem->data.eitherOrData.option1 : selectedItem->data.eitherOrData.option2);
+         debugMsgMnm("[EITHER-OR] Selected: " + String(editingEitherOr ? selectedItem->data.eitherOrData.option1 : selectedItem->data.eitherOrData.option2));
          *(selectedItem->data.eitherOrData.valuePtr) = editingEitherOr;
+         // Call onSave callback if provided
+         if (selectedItem->data.eitherOrData.onSave) {
+           selectedItem->data.eitherOrData.onSave();
+         }
          exitCurrentMode();
        }
        break;
@@ -619,11 +654,7 @@
        if (currentMode == MODE_MENU_NAVIGATION) {
          if (currentMenu->parent) {
            MenuItem* parent = currentMenu->parent;
-           Serial.print("[MENU] Going back from: ");
-           Serial.print(currentMenu->label);
-           Serial.print(" to: ");
-           debugMsgMnm(parent->parent ? parent->parent->label : rootMenu->label);
-           
+           debugMsgMnm("[MENU] Going back from: " + String(currentMenu->label) + " to parent: " + String(parent->parent ? parent->parent->label : rootMenu->label)); 
            currentMenu = parent->parent ? parent->parent : rootMenu;
            selectedItem = parent;
            
@@ -644,8 +675,7 @@
          if (editingCursorPos > 0) {
            editingCursorPos--;
            editingBuffer[editingCursorPos] = '\0';
-           Serial.print("[STRING] Deleted character, now: ");
-           debugMsgMnm(editingBuffer);
+           debugMsgMnm("[STRING] Deleted character, now: " + String(editingBuffer));
          } else {
            debugMsgMnm("[STRING] Cancelled string editing");
            exitCurrentMode();
@@ -709,9 +739,6 @@
      item = item->next;
      index++;
    }
-   
-   // Serial.print("[RENDER] Starting from index: ");
-   // debugMsgMnm(index);
    
    // Draw visible items
    uint8_t yPos = startY;
@@ -878,9 +905,7 @@
    screenSaverTimeout = timeoutMs;
    lastActivityTime = millis();
    screenSaverActive = false;
-   Serial.print("[SCREEN] Screen saver enabled with timeout: ");
-   Serial.print(timeoutMs / 1000);
-   debugMsgMnm(" seconds");
+   debugMsgMnm("[SCREEN] Screen saver enabled with timeout: " + String(timeoutMs / 1000));
  }
  
  // Disable screen saver
@@ -922,6 +947,12 @@
    debugMsgMnm("[STATUS] Custom input callback configured");
  }
 
+ // Set custom status encoder callback
+ void MenuSystem::setStatusEncoderCallback(StatusEncoderCallback callback) {
+   statusEncoderCallback = callback;
+   debugMsgMnm("[STATUS] Custom encoder callback configured");
+ }
+
  // Show status screen
  void MenuSystem::showStatusScreen() {
    currentMode = MODE_STATUS_SCREEN;
@@ -940,13 +971,34 @@
      debugMsgMnm("[MENU] Showing menu");
    }
  }
- 
+
+ void MenuSystem::enterEitherOrEdit(bool *valuePtr, const char *opt1, const char *opt2,
+                                    ActionCallback onConfirm, const char *label)
+ {
+   // Create a persistent MenuItem for editing (delete old one if exists)
+   if (tempEditItem) {
+      delete tempEditItem;
+   }
+   tempEditItem = new MenuItem(label, MENU_ITEM_EITHER_OR);
+   tempEditItem->data.eitherOrData.valuePtr = valuePtr;
+   tempEditItem->data.eitherOrData.option1 = opt1;
+   tempEditItem->data.eitherOrData.option2 = opt2;
+   tempEditItem->data.eitherOrData.onSave = onConfirm;
+
+   selectedItem = tempEditItem;
+   debugMsgMnm("[EITHER-OR] Editing: " + String(label));
+   currentMode = MODE_EITHER_OR;
+   editingEitherOr = *valuePtr;
+   encoderPosition = 0;
+   lastEncoderPos = 0;
+   resetMenuActivity();
+   resetActivity();
+ }
+
  // Set menu timeout - this is the timeout to return to the status menu
  void MenuSystem::setMenuTimeout(unsigned long timeoutMs) {
    menuTimeout = timeoutMs;
-   Serial.print("[MENU] Menu timeout set to: ");
-   Serial.print(timeoutMs / 1000);
-   debugMsgMnm(" seconds");
+   debugMsgMnm("[MENU] Menu timeout set to: " + String(timeoutMs / 1000));
  }
  
  // Navigate to specific menu

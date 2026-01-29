@@ -114,9 +114,9 @@ void setup() {
   debugMsgMain("Starting Menu System");
   // Initialize ESP32MenuSystem with pin definitions from Defs.h
   if (!menuSystem.begin(SDAInt, SCLInt,
-                       ENCODER_CLK, ENCODER_DT,
-                       BTN_CONFIRM, BTN_BACK,
-                       ENCODER_SW)) {
+                       PIN_ENCODER_CLK, PIN_ENCODER_DT,
+                       PIN_BTN_CONFIRM, PIN_BTN_BACK,
+                       PIN_ENCODER_SW)) {
     debugMsgMain("Failed to initialize menu system!");
   } else {
     debugMsgMain("Menu system initialized successfully");
@@ -151,7 +151,7 @@ void setup() {
   // -------------------------------------------------------------------------
 
   // Emergency WiFi start - hold encoder button during boot
-  if ((WiFi.isConnected() == false) && digitalRead(ENCODER_SW) == LOW) {
+  if ((WiFi.isConnected() == false) && digitalRead(PIN_ENCODER_SW) == LOW) {
       debugMsgMain("Start open AP (encoder button held)");
       wifiManager.openAccessPortal();
   }

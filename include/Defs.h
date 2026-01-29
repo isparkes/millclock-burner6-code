@@ -19,7 +19,6 @@
 // Digit drivers
 #define CLKPin    19
 #define BLANKPin  18
-
 #define DATAPin   23
 #define LATCHPin  TX2
 
@@ -32,11 +31,11 @@
 #define IND2Pin   12
 
 // Menu system pin names (for clarity in menu code)
-#define ENCODER_CLK 5
-#define ENCODER_DT  14
-#define ENCODER_SW  16
-#define BTN_CONFIRM 15
-#define BTN_BACK    4
+#define PIN_ENCODER_CLK 5
+#define PIN_ENCODER_DT  14
+#define PIN_ENCODER_SW  16
+#define PIN_BTN_CONFIRM 15
+#define PIN_BTN_BACK    4
 
 // Sound
 #define BUZZER_PIN 25

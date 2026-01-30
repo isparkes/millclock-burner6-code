@@ -34,7 +34,8 @@
    MODE_MENU_NAVIGATION,
    MODE_NUMERIC_VALUE,
    MODE_STRING_COMPOSITION,
-   MODE_EITHER_OR
+   MODE_EITHER_OR,
+   MODE_FLASH_MESSAGE
  };
  
  // Button event types
@@ -180,6 +181,12 @@
    StatusInputCallback statusInputCallback = NULL;
   StatusEncoderCallback statusEncoderCallback = NULL;
 
+   // Flash message state
+   char flashMessage[64];
+   unsigned long flashMessageStart = 0;
+   unsigned long flashMessageDuration = 0;
+   DisplayMode flashPreviousMode = MODE_STATUS_SCREEN;
+
    // Private methods
    void updateEncoder();
    ButtonEvent checkButtons();
@@ -188,6 +195,7 @@
    void renderNumericValue();
    void renderStringComposition();
    void renderEitherOr();
+   void renderFlashMessage();
    void enterMenuItem(MenuItem* item);
    void exitCurrentMode();
    MenuItem* getItemAtIndex(uint8_t index);
@@ -205,8 +213,8 @@
    ~MenuSystem();
    
    // Initialization
-   bool begin(uint8_t sdaPin, uint8_t sclPin, 
-              uint8_t encClk, uint8_t encDt, 
+   bool begin(uint8_t sdaPin, uint8_t sclPin,
+              uint8_t encClk, uint8_t encDt,
               uint8_t btnConfirm, uint8_t btnBack,
               uint8_t encSw = 255);
    
@@ -249,8 +257,12 @@
    void enterEitherOrEdit(bool* valuePtr, const char* opt1, const char* opt2,
                          ActionCallback onConfirm = NULL, const char* label = "Select");
 
+   // Flash message
+   void showFlashMessage(const char* message, unsigned long durationMs = 2000);
+
    // Utility
    void navigateToMenu(MenuItem* menu);
+   void clearMenuItems(MenuItem* menu);  // Free all children of a menu
    void resetActivity();  // Reset screen saver timer
    void resetMenuActivity();  // Reset menu timeout timer
  };

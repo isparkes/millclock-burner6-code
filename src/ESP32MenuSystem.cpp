@@ -466,6 +466,18 @@
      }
    }
    
+   // Check for flash message timeout
+   if (currentMode == MODE_FLASH_MESSAGE) {
+     if ((millis() - flashMessageStart) >= flashMessageDuration) {
+       currentMode = flashPreviousMode;
+     }
+     // Render flash message but skip input processing
+     display->clearDisplay();
+     renderFlashMessage();
+     display->display();
+     return;
+   }
+
    // Check for menu timeout (return to status screen)
    if (currentMode != MODE_STATUS_SCREEN && statusData != NULL) {
      unsigned long now = millis();
@@ -894,7 +906,45 @@
    // Reset text color at end
    display->setTextColor(SH110X_WHITE);
  }
- 
+
+// Render flash message
+void MenuSystem::renderFlashMessage() {
+   display->setTextSize(1);
+   display->setTextColor(SH110X_WHITE);
+
+   // Measure the message text
+   int16_t x1, y1;
+   uint16_t w, h;
+   display->getTextBounds(flashMessage, 0, 0, &x1, &y1, &w, &h);
+
+   // Draw a bordered box centered on screen
+   uint8_t boxW = w + 16;
+   uint8_t boxH = h + 16;
+   if (boxW > screenWidth) boxW = screenWidth;
+   uint8_t boxX = (screenWidth - boxW) / 2;
+   uint8_t boxY = (screenHeight - boxH) / 2;
+
+   display->fillRect(boxX, boxY, boxW, boxH, SH110X_BLACK);
+   display->drawRect(boxX, boxY, boxW, boxH, SH110X_WHITE);
+   display->drawRect(boxX + 1, boxY + 1, boxW - 2, boxH - 2, SH110X_WHITE);
+
+   // Center the text inside the box
+   uint8_t textX = (screenWidth - w) / 2;
+   uint8_t textY = (screenHeight - h) / 2;
+   display->setCursor(textX, textY);
+   display->print(flashMessage);
+}
+
+// Show flash message for a duration
+void MenuSystem::showFlashMessage(const char* message, unsigned long durationMs) {
+   flashPreviousMode = currentMode;
+   strncpy(flashMessage, message, sizeof(flashMessage) - 1);
+   flashMessage[sizeof(flashMessage) - 1] = '\0';
+   flashMessageStart = millis();
+   flashMessageDuration = durationMs;
+   currentMode = MODE_FLASH_MESSAGE;
+}
+
  // Set display contrast
  void MenuSystem::setContrast(uint8_t contrast) {
    display->setContrast(contrast);
